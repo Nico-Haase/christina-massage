@@ -31,7 +31,7 @@ export async function sendCustomerBookingRequestEmail(data: BookingMailData) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to: data.email,
-    reply_to: REPLY_TO_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
     subject:
       "Buchungsanfrage erhalten – Christina Massage | Foglalási kérés megérkezett",
     html: `
@@ -80,7 +80,7 @@ export async function sendOwnerNewBookingEmail(data: BookingMailData) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to: ownerEmail,
-    reply_to: REPLY_TO_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
     subject: "Neue Buchungsanfrage eingegangen",
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
@@ -104,7 +104,7 @@ export async function sendCustomerConfirmedEmail(data: BookingMailData) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to: data.email,
-    reply_to: REPLY_TO_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
     subject:
       "Dein Termin wurde bestätigt – Christina Massage | Az időpontod visszaigazolva",
     html: `
@@ -141,7 +141,7 @@ export async function sendCustomerCancelledEmail(data: BookingMailData) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to: data.email,
-    reply_to: REPLY_TO_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
     subject:
       "Dein Termin wurde storniert – Christina Massage | Az időpontod törölve",
     html: `
