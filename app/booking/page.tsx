@@ -371,24 +371,28 @@ export default function BookingPage() {
       const startKey = `${monthStart.getFullYear()}-${`${monthStart.getMonth() + 1}`.padStart(2, "0")}-${`${monthStart.getDate()}`.padStart(2, "0")}`;
       const endKey = `${monthEnd.getFullYear()}-${`${monthEnd.getMonth() + 1}`.padStart(2, "0")}-${`${monthEnd.getDate()}`.padStart(2, "0")}`;
 
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select(
-          "id, booking_date, booking_time, duration_minutes, service_name, full_name, email, price_eur, status"
-        )
-        .gte("booking_date", startKey)
-        .lte("booking_date", endKey)
-        .in("status", ["requested", "confirmed"]);
+      try {
+        const response = await fetch(
+          `/api/booking-availability?start=${startKey}&end=${endKey}`,
+          { cache: "no-store" }
+        );
 
-      const { data: blockedData } = await supabase
-        .from("blocked_times")
-        .select("id, block_date, start_time, end_time, title, block_type, note")
-        .gte("block_date", startKey)
-        .lte("block_date", endKey);
+        const result = await response.json();
 
-      setCalendarBookings((bookingsData ?? []) as CalendarBooking[]);
-      setCalendarBlockedTimes((blockedData ?? []) as CalendarBlock[]);
-      setCalendarLoading(false);
+        if (!response.ok) {
+          setCalendarBookings([]);
+          setCalendarBlockedTimes([]);
+          return;
+        }
+
+        setCalendarBookings(result.bookings ?? []);
+        setCalendarBlockedTimes(result.blocks ?? []);
+      } catch {
+        setCalendarBookings([]);
+        setCalendarBlockedTimes([]);
+      } finally {
+        setCalendarLoading(false);
+      }
     };
 
     loadMonthData();
@@ -398,24 +402,29 @@ export default function BookingPage() {
     if (!selectedDate) return;
 
     const loadDayData = async () => {
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select(
-          "id, booking_date, booking_time, duration_minutes, service_name, full_name, email, price_eur, status"
-        )
-        .eq("booking_date", selectedDate)
-        .in("status", ["requested", "confirmed"])
-        .order("booking_time", { ascending: true });
+      try {
+        const response = await fetch(
+          `/api/booking-availability?date=${selectedDate}`,
+          { cache: "no-store" }
+        );
 
-      const { data: blockedData } = await supabase
-        .from("blocked_times")
-        .select("id, block_date, start_time, end_time, title, block_type, note")
-        .eq("block_date", selectedDate)
-        .order("start_time", { ascending: true });
+        const result = await response.json();
 
-      setDailyBookings((bookingsData ?? []) as CalendarBooking[]);
-      setDailyBlockedTimes((blockedData ?? []) as CalendarBlock[]);
-      setSelectedSlotTime(null);
+        if (!response.ok) {
+          setDailyBookings([]);
+          setDailyBlockedTimes([]);
+          setSelectedSlotTime(null);
+          return;
+        }
+
+        setDailyBookings(result.bookings ?? []);
+        setDailyBlockedTimes(result.blocks ?? []);
+        setSelectedSlotTime(null);
+      } catch {
+        setDailyBookings([]);
+        setDailyBlockedTimes([]);
+        setSelectedSlotTime(null);
+      }
     };
 
     loadDayData();
@@ -520,7 +529,9 @@ export default function BookingPage() {
       return;
     }
 
-    const selectedSlot = availableSlots.find((slot) => slot.time === selectedSlotTime);
+    const selectedSlot = availableSlots.find(
+      (slot) => slot.time === selectedSlotTime
+    );
 
     if (!selectedSlot || selectedSlot.unavailable) {
       setStatusMessage(
@@ -568,12 +579,39 @@ export default function BookingPage() {
         } else {
           setStatusMessage(result?.message || t.bookingError, "error");
         }
+
+        await (async () => {
+          try {
+            const refreshResponse = await fetch(
+              `/api/booking-availability?date=${selectedDate}`,
+              { cache: "no-store" }
+            );
+            const refreshResult = await refreshResponse.json();
+            if (refreshResponse.ok) {
+              setDailyBookings(refreshResult.bookings ?? []);
+              setDailyBlockedTimes(refreshResult.blocks ?? []);
+            }
+          } catch {}
+        })();
+
         return;
       }
 
       setStatusMessage(t.bookingSuccess, "success");
       setAcceptedTerms(false);
       setSelectedSlotTime(null);
+
+      try {
+        const refreshResponse = await fetch(
+          `/api/booking-availability?date=${selectedDate}`,
+          { cache: "no-store" }
+        );
+        const refreshResult = await refreshResponse.json();
+        if (refreshResponse.ok) {
+          setDailyBookings(refreshResult.bookings ?? []);
+          setDailyBlockedTimes(refreshResult.blocks ?? []);
+        }
+      } catch {}
 
       setTimeout(() => {
         router.push("/my-bookings");
@@ -819,11 +857,6 @@ export default function BookingPage() {
                         <div className="mt-1 text-sm text-stone-700">
                           {event.title}
                         </div>
-                        {event.subtitle && (
-                          <div className="mt-1 text-xs text-stone-500">
-                            {event.subtitle}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>

@@ -37,6 +37,14 @@ function rangesOverlap(
   return startA < endB && endA > startB;
 }
 
+function isWeekend(dateString: string) {
+  const date = new Date(`${dateString}T12:00:00`);
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+const LAST_END_TIME_MINUTES = 20 * 60 + 15;
+
 export async function POST(req: Request) {
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -88,6 +96,10 @@ export async function POST(req: Request) {
       return errorResponse("AGB wurden nicht akzeptiert.", 400);
     }
 
+    if (isWeekend(date)) {
+      return errorResponse("Am Wochenende sind keine Termine buchbar.", 400);
+    }
+
     const numericDuration = Number(duration);
     const numericPrice = Number(price);
 
@@ -102,6 +114,10 @@ export async function POST(req: Request) {
 
     const requestedStart = timeToMinutes(time);
     const requestedEnd = requestedStart + numericDuration;
+
+    if (requestedEnd > LAST_END_TIME_MINUTES) {
+      return errorResponse("Dieser Termin liegt außerhalb der Arbeitszeiten.", 400);
+    }
 
     const { data: existingBookings, error: existingBookingsError } =
       await supabaseAdmin
