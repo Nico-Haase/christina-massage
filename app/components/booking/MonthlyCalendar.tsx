@@ -93,7 +93,7 @@ export default function MonthlyCalendar({
                   key={dateKey}
                   type="button"
                   onClick={() => onSelectDate(dateKey)}
-                  className={`min-h-[108px] rounded-2xl border p-2 text-left transition md:min-h-[128px] md:p-3 ${
+                  className={`min-h-[118px] rounded-2xl border p-2 text-left transition md:min-h-[138px] md:p-3 ${
                     isCurrentMonth
                       ? statusClasses
                       : "border-stone-200 bg-stone-50 text-stone-400"
@@ -103,19 +103,23 @@ export default function MonthlyCalendar({
                     <span className="text-sm font-semibold md:text-base">
                       {date.getDate()}
                     </span>
-                    {meta.bookingCount + meta.blockCount > 0 && isCurrentMonth && (
-                      <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold">
-                        {meta.bookingCount + meta.blockCount}
-                      </span>
-                    )}
+
+                    {isCurrentMonth &&
+                      (meta.bookingCount > 0 || meta.blockCount > 0) && (
+                        <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold">
+                          {meta.bookingCount + meta.blockCount}
+                        </span>
+                      )}
                   </div>
 
-                  <div className="mt-3 text-[11px] leading-4 md:text-xs">
+                  <div className="mt-3 space-y-1 text-[11px] leading-4 md:text-xs">
                     <div className="font-semibold">{meta.label}</div>
+
                     {meta.bookingCount > 0 && (
-                      <div className="mt-1">Termine: {meta.bookingCount}</div>
+                      <div>Termine: {meta.bookingCount}</div>
                     )}
-                    {meta.blockCount > 0 && <div>Blocks: {meta.blockCount}</div>}
+
+                    {meta.blockCount > 0 && <div>Blöcke: {meta.blockCount}</div>}
                   </div>
                 </button>
               );
@@ -129,7 +133,7 @@ export default function MonthlyCalendar({
           Grün = freie Termine
         </div>
         <div className="rounded-full bg-red-100 px-3 py-1 font-medium text-red-800">
-          Rot = gebucht / blockiert
+          Rot = ausgebucht / geschlossen
         </div>
       </div>
     </div>
