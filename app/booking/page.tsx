@@ -313,13 +313,31 @@ export default function BookingPage() {
     setSelectedDate(startKey);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("auth") === "1") {
-      setShowAuth(true);
-    }
-  }, []);
+ useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("auth") === "1") {
+    setShowAuth(true);
+  }
+
+  if (params.get("mode") === "login") {
+    setIsRegisterMode(false);
+    setShowAuth(true);
+  }
+
+  if (params.get("confirmed") === "1") {
+    setIsRegisterMode(false);
+    setShowAuth(true);
+    setStatusMessage(
+      language === "de"
+        ? "E-Mail bestätigt. Bitte jetzt einloggen."
+        : "Az email megerősítve. Kérjük most jelentkezz be.",
+      "success"
+    );
+  }
+}, [language]);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -471,7 +489,13 @@ export default function BookingPage() {
         }
 
         setShowAuth(false);
-        setStatusMessage(t.authSuccessRegister, "success");
+setIsRegisterMode(false);
+setStatusMessage(
+  language === "de"
+    ? "Registrierung erfolgreich. Bitte bestätige zuerst deine E-Mail und logge dich danach ein."
+    : "Sikeres regisztráció. Kérjük először erősítsd meg az emailedet, majd jelentkezz be.",
+  "success"
+);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),

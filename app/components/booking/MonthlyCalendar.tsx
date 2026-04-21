@@ -82,22 +82,31 @@ export default function MonthlyCalendar({
               const meta = getDayMeta(dateKey);
 
               const statusClasses =
-                meta.status === "free"
+                meta.label === "Vergangen"
+                  ? "border-stone-300 bg-stone-100 text-stone-500"
+                  : meta.status === "free"
                   ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                   : meta.status === "busy"
                   ? "border-red-200 bg-red-50 text-red-800"
                   : "border-red-300 bg-red-100 text-red-900";
 
+              const disabled = !isCurrentMonth || meta.label === "Vergangen";
+
               return (
                 <button
                   key={dateKey}
                   type="button"
-                  onClick={() => onSelectDate(dateKey)}
+                  onClick={() => {
+                    if (disabled) return;
+                    onSelectDate(dateKey);
+                  }}
                   className={`min-h-[118px] rounded-2xl border p-2 text-left transition md:min-h-[138px] md:p-3 ${
                     isCurrentMonth
                       ? statusClasses
                       : "border-stone-200 bg-stone-50 text-stone-400"
-                  } ${isSelected ? "ring-2 ring-stone-800" : ""}`}
+                  } ${isSelected ? "ring-2 ring-stone-800" : ""} ${
+                    disabled ? "cursor-not-allowed" : ""
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-sm font-semibold md:text-base">
@@ -134,6 +143,9 @@ export default function MonthlyCalendar({
         </div>
         <div className="rounded-full bg-red-100 px-3 py-1 font-medium text-red-800">
           Rot = ausgebucht / geschlossen
+        </div>
+        <div className="rounded-full bg-stone-200 px-3 py-1 font-medium text-stone-700">
+          Grau = vergangen
         </div>
       </div>
     </div>

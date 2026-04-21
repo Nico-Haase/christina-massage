@@ -271,7 +271,7 @@ export default function ChristinaMassageWebsite() {
       hero: {
         title: "Harmónia testnek és léleknek",
         subtitle:
-          "Egyéni kezelések, figyelmes kísérés és nyugodt környezet a személyes jóllétedért.",
+          "Egyéni kezelések, Holisztikus szemlélet és nyugodt környezet a személyes jóllétedért.",
         primary: "Időpontfoglalás",
         secondary: "Hívás vagy WhatsApp",
       },

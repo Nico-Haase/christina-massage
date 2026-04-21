@@ -54,12 +54,6 @@ export function rangesOverlap(
   return startA < endB && endA > startB;
 }
 
-export function isWeekend(dateString: string) {
-  const date = new Date(`${dateString}T12:00:00`);
-  const day = date.getDay();
-  return day === 0 || day === 6;
-}
-
 export function formatDateKey(date: Date) {
   const y = date.getFullYear();
   const m = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -73,6 +67,17 @@ export function parseDateKey(dateString: string) {
 
 export function getTodayString() {
   return formatDateKey(new Date());
+}
+
+export function isWeekend(dateString: string) {
+  const date = parseDateKey(dateString);
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+export function isPastDate(dateString: string) {
+  const today = getTodayString();
+  return dateString < today;
 }
 
 export function getNextWorkingDay(startDate: Date) {
@@ -131,6 +136,14 @@ export function getSlotAvailability(
   return WORKING_SLOTS.map((slot) => {
     const slotStart = timeToMinutes(slot);
     const slotEnd = slotStart + duration;
+
+    if (isPastDate(dateString)) {
+      return {
+        time: slot,
+        unavailable: true,
+        reason: "past" as const,
+      };
+    }
 
     if (isWeekend(dateString)) {
       return {
@@ -232,6 +245,16 @@ export function getDayStatus(
   blocks: CalendarBlock[],
   previewDuration = 45
 ) {
+  if (isPastDate(dateString)) {
+    return {
+      status: "closed" as const,
+      freeSlots: 0,
+      bookingCount: bookings.length,
+      blockCount: blocks.length,
+      label: "Vergangen",
+    };
+  }
+
   if (isWeekend(dateString)) {
     return {
       status: "closed" as const,
@@ -252,12 +275,7 @@ export function getDayStatus(
     };
   }
 
-  const slots = getSlotAvailability(
-    dateString,
-    previewDuration,
-    bookings,
-    blocks
-  );
+  const slots = getSlotAvailability(dateString, previewDuration, bookings, blocks);
   const freeSlots = slots.filter((slot) => !slot.unavailable).length;
 
   if (freeSlots <= 0) {
