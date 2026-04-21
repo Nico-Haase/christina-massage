@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "./lib/supabase";
 
 type Language = "de" | "hu";
 
@@ -35,7 +36,28 @@ export default function ChristinaMassageWebsite() {
   const [language, setLanguage] = useState<Language>("de");
   const [showHiemtInfo, setShowHiemtInfo] = useState(false);
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const servicesSliderRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      setIsLoggedIn(!!session?.user);
+    };
+
+    loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const scrollSlider = (
     ref: React.MutableRefObject<HTMLDivElement | null>,
@@ -66,6 +88,7 @@ export default function ChristinaMassageWebsite() {
         location: "Anfahrt",
         booking: "Termin buchen",
         login: "Login / Registrierung",
+        account: "Benutzerkonto",
       },
       hero: {
         title: "Entspannung für Körper und Seele",
@@ -267,6 +290,7 @@ export default function ChristinaMassageWebsite() {
         location: "Megközelítés",
         booking: "Időpontfoglalás",
         login: "Bejelentkezés / Regisztráció",
+        account: "Felhasználói fiók",
       },
       hero: {
         title: "Harmónia testnek és léleknek",
@@ -455,6 +479,9 @@ export default function ChristinaMassageWebsite() {
 
   const c = content;
 
+  const accountHref = isLoggedIn ? "/my-bookings" : "/booking?auth=1&mode=login";
+  const accountLabel = isLoggedIn ? c.nav.account : c.nav.login;
+
   const hiemtInfo = useMemo<{ de: InfoEntry; hu: InfoEntry }>(
     () => ({
       de: {
@@ -614,7 +641,7 @@ export default function ChristinaMassageWebsite() {
                 "A vérkeringés elősegítése",
                 "Azomfeszültség enyhítése",
                 "Enyhül a stressz és megtörténik a lelki ellazulás",
-                "A szövetek oxigennellátásának javítása",
+                "A szövetek oxigénnellátásának javítása",
                 "A nyirokkeringés támogatása",
                 "Fokozott általános jólét",
                 "A pihentető alvás elősegítése",
@@ -819,7 +846,7 @@ export default function ChristinaMassageWebsite() {
           ],
         },
       },
-            individual: {
+      individual: {
         de: {
           title: "Individuelle Massage",
           sections: [
@@ -1321,7 +1348,7 @@ export default function ChristinaMassageWebsite() {
           ],
         },
       },
-            schroepfen: {
+      schroepfen: {
         de: {
           title: "Schröpfen",
           sections: [
@@ -1562,10 +1589,10 @@ export default function ChristinaMassageWebsite() {
                 {c.nav.location}
               </a>
               <a
-                href="/booking?auth=1"
+                href={accountHref}
                 className="rounded-full border border-white/70 px-5 py-2 text-base font-medium text-white transition hover:bg-white/10"
               >
-                {c.nav.login}
+                {accountLabel}
               </a>
               <a
                 href="#booking"
@@ -1575,7 +1602,8 @@ export default function ChristinaMassageWebsite() {
               </a>
             </div>
           </div>
-                    <div className="flex flex-col gap-3 pb-3 lg:hidden">
+
+          <div className="flex flex-col gap-3 pb-3 lg:hidden">
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-white/95">
               <a href="#ueber">{c.nav.about}</a>
               <a href="#leistungen">{c.nav.services}</a>
@@ -1585,10 +1613,10 @@ export default function ChristinaMassageWebsite() {
             </div>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <a
-                href="/booking?auth=1"
+                href={accountHref}
                 className="rounded-full border border-white/70 px-4 py-2 text-sm font-medium text-white"
               >
-                {c.nav.login}
+                {accountLabel}
               </a>
               <a
                 href="#booking"
@@ -1676,7 +1704,7 @@ export default function ChristinaMassageWebsite() {
               href={c.brand.whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="border border-white/60 px-8 py-4 text-base font-medium text-white transition hover:bg-white/10 md:px-10"
+              className="border border-[#d6b36a] bg-[#d6b36a] px-8 py-4 text-base font-medium text-stone-900 transition hover:opacity-90 md:px-10"
             >
               {c.hero.secondary}
             </a>
@@ -1829,7 +1857,8 @@ export default function ChristinaMassageWebsite() {
           </div>
         </div>
       </section>
-            <section id="leistungen" className="pt-16 pb-4 md:pt-20">
+
+      <section id="leistungen" className="pt-16 pb-4 md:pt-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
           <div className="mb-10 text-center">
             <p className="text-sm uppercase tracking-[0.28em] text-stone-500">
@@ -1987,10 +2016,10 @@ export default function ChristinaMassageWebsite() {
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <a
-              href="/booking?auth=1"
+              href={accountHref}
               className="rounded-full border border-[#567a57] bg-white px-8 py-4 text-base font-medium text-[#567a57] transition hover:bg-[#f4f8ef]"
             >
-              {c.nav.login}
+              {accountLabel}
             </a>
             <a
               href="/booking"
@@ -2083,7 +2112,8 @@ export default function ChristinaMassageWebsite() {
           </div>
         </div>
       </footer>
-            {showHiemtInfo && (
+
+      {showHiemtInfo && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
           onClick={() => setShowHiemtInfo(false)}
@@ -2177,7 +2207,7 @@ export default function ChristinaMassageWebsite() {
                     )}
 
                     {section.bullets && (
-                      <ul className="mt-3 space-y-2 pl-5 text-sm leading-7 list-disc md:text-base">
+                      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-7 md:text-base">
                         {section.bullets.map((b, i) => (
                           <li key={`${b}-${i}`}>{b}</li>
                         ))}
