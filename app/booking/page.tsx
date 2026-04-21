@@ -591,35 +591,42 @@ export default function BookingPage() {
   };
 
   const handleResendConfirmation = async () => {
-    setStatusMessage("", "info");
+  setStatusMessage("", "info");
 
-    const normalizedEmail = normalizeEmail(email);
+  const normalizedEmail = normalizeEmail(email);
 
-    if (!normalizedEmail) {
-      setStatusMessage(t.forgotPasswordNeedEmail, "error");
-      return;
-    }
+  console.log("Resend gestartet für:", normalizedEmail);
 
-    setResendLoading(true);
+  if (!normalizedEmail) {
+    setStatusMessage(t.forgotPasswordNeedEmail, "error");
+    return;
+  }
 
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: normalizedEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/booking?auth=1&mode=login&confirmed=1`,
-      },
-    });
+  setResendLoading(true);
 
-    setResendLoading(false);
+  const { data, error } = await supabase.auth.resend({
+    type: "signup",
+    email: normalizedEmail,
+    options: {
+      emailRedirectTo: `${window.location.origin}/booking?auth=1&mode=login&confirmed=1`,
+    },
+  });
 
-    if (error) {
-      setStatusMessage(t.resendFailed, "error");
-      return;
-    }
+  console.log("Resend Antwort data:", data);
+  console.log("Resend Antwort error:", error);
 
-    setStatusMessage(t.resendSuccess, "success");
-  };
+  setResendLoading(false);
 
+  if (error) {
+    setStatusMessage(
+      `${t.resendFailed}${error.message ? `: ${error.message}` : ""}`,
+      "error"
+    );
+    return;
+  }
+
+  setStatusMessage(t.resendSuccess, "success");
+};
   const handleBookingSubmit = async () => {
     setStatusMessage("", "info");
 
