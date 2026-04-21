@@ -137,6 +137,8 @@ export default function BookingPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -264,6 +266,26 @@ export default function BookingPage() {
           : "Erre a napra még nincs bejegyzés.",
       calendarLoading:
         language === "de" ? "Kalender wird geladen..." : "Naptár betöltése...",
+      forgotPassword:
+        language === "de" ? "Passwort vergessen?" : "Elfelejtetted a jelszavad?",
+      sending:
+        language === "de" ? "Wird gesendet..." : "Küldés...",
+      forgotPasswordNeedEmail:
+        language === "de"
+          ? "Bitte gib zuerst deine E-Mail-Adresse ein."
+          : "Kérjük először add meg az email címedet.",
+      forgotPasswordSuccess:
+        language === "de"
+          ? "Passwort-Reset-Mail wurde gesendet. Bitte prüfe auch deinen Spam-Ordner."
+          : "A jelszó-visszaállító email elküldve. Kérjük ellenőrizd a spam mappát is.",
+      confirmedLoginHint:
+        language === "de"
+          ? "E-Mail bestätigt. Bitte jetzt einloggen."
+          : "Az email megerősítve. Kérjük most jelentkezz be.",
+      registerLoginHint:
+        language === "de"
+          ? "Registrierung erfolgreich. Bitte bestätige zuerst deine E-Mail und logge dich danach ein."
+          : "Sikeres regisztráció. Kérjük először erősítsd meg az emailedet, majd jelentkezz be.",
     };
   }, [language]);
 
@@ -313,31 +335,26 @@ export default function BookingPage() {
     setSelectedDate(startKey);
   }, []);
 
- useEffect(() => {
-  if (typeof window === "undefined") return;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.search);
 
-  if (params.get("auth") === "1") {
-    setShowAuth(true);
-  }
+    if (params.get("auth") === "1") {
+      setShowAuth(true);
+    }
 
-  if (params.get("mode") === "login") {
-    setIsRegisterMode(false);
-    setShowAuth(true);
-  }
+    if (params.get("mode") === "login") {
+      setIsRegisterMode(false);
+      setShowAuth(true);
+    }
 
-  if (params.get("confirmed") === "1") {
-    setIsRegisterMode(false);
-    setShowAuth(true);
-    setStatusMessage(
-      language === "de"
-        ? "E-Mail bestätigt. Bitte jetzt einloggen."
-        : "Az email megerősítve. Kérjük most jelentkezz be.",
-      "success"
-    );
-  }
-}, [language]);
+    if (params.get("confirmed") === "1") {
+      setIsRegisterMode(false);
+      setShowAuth(true);
+      setStatusMessage(t.confirmedLoginHint, "success");
+    }
+  }, [t.confirmedLoginHint]);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -489,13 +506,8 @@ export default function BookingPage() {
         }
 
         setShowAuth(false);
-setIsRegisterMode(false);
-setStatusMessage(
-  language === "de"
-    ? "Registrierung erfolgreich. Bitte bestätige zuerst deine E-Mail und logge dich danach ein."
-    : "Sikeres regisztráció. Kérjük először erősítsd meg az emailedet, majd jelentkezz be.",
-  "success"
-);
+        setIsRegisterMode(false);
+        setStatusMessage(t.registerLoginHint, "success");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -513,6 +525,30 @@ setStatusMessage(
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    setStatusMessage("", "info");
+
+    if (!email.trim()) {
+      setStatusMessage(t.forgotPasswordNeedEmail, "error");
+      return;
+    }
+
+    setResetLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setResetLoading(false);
+
+    if (error) {
+      setStatusMessage(error.message, "error");
+      return;
+    }
+
+    setStatusMessage(t.forgotPasswordSuccess, "success");
   };
 
   const handleBookingSubmit = async () => {
@@ -604,19 +640,17 @@ setStatusMessage(
           setStatusMessage(result?.message || t.bookingError, "error");
         }
 
-        await (async () => {
-          try {
-            const refreshResponse = await fetch(
-              `/api/booking-availability?date=${selectedDate}`,
-              { cache: "no-store" }
-            );
-            const refreshResult = await refreshResponse.json();
-            if (refreshResponse.ok) {
-              setDailyBookings(refreshResult.bookings ?? []);
-              setDailyBlockedTimes(refreshResult.blocks ?? []);
-            }
-          } catch {}
-        })();
+        try {
+          const refreshResponse = await fetch(
+            `/api/booking-availability?date=${selectedDate}`,
+            { cache: "no-store" }
+          );
+          const refreshResult = await refreshResponse.json();
+          if (refreshResponse.ok) {
+            setDailyBookings(refreshResult.bookings ?? []);
+            setDailyBlockedTimes(refreshResult.blocks ?? []);
+          }
+        } catch {}
 
         return;
       }
@@ -1138,13 +1172,34 @@ setStatusMessage(
                 <label className="mb-2 block text-sm font-medium text-stone-700">
                   {t.password}
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-stone-200 px-4 py-3 outline-none focus:border-[#567a57]"
-                  placeholder={t.passwordPlaceholder}
-                />
+
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-2xl border border-stone-200 px-4 py-3 pr-14 outline-none focus:border-[#567a57]"
+                    placeholder={t.passwordPlaceholder}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-sm text-stone-600 hover:bg-stone-100"
+                  >
+                    {showPassword ? "🙈" : "👁"}
+                  </button>
+                </div>
+
+                {!isRegisterMode && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                    className="mt-2 text-sm text-[#405e3f] underline disabled:opacity-60"
+                  >
+                    {resetLoading ? t.sending : t.forgotPassword}
+                  </button>
+                )}
               </div>
 
               <button
