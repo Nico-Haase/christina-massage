@@ -325,15 +325,16 @@ export default function BookingPage() {
     return isLoggedIn && acceptedTerms && !!selectedSlotTime && !!selectedDate;
   }, [isLoggedIn, acceptedTerms, selectedSlotTime, selectedDate]);
 
-  const availableSlots = useMemo(() => {
-    if (!selectedDate) return [];
-    return getSlotAvailability(
-      selectedDate,
-      selectedOption.duration,
-      dailyBookings,
-      dailyBlockedTimes
-    );
-  }, [selectedDate, selectedOption.duration, dailyBookings, dailyBlockedTimes]);
+  const availableSlots = useMemo<SlotAvailability[]>(() => {
+  if (!selectedDate) return [];
+
+  return getSlotAvailability(
+    selectedDate,
+    selectedOption.duration,
+    dailyBookings,
+    dailyBlocks
+  );
+}, [selectedDate, selectedOption.duration, dailyBookings, dailyBlocks]);
 
   const dailyEvents = useMemo(() => {
     return getDailyEvents(dailyBookings, dailyBlockedTimes);
