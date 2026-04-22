@@ -248,6 +248,40 @@ export default function ChristinaMassageWebsite() {
         button: "Zum Kalender",
         note: "Login oder Registrierung verpflichtend",
       },
+      testimonials: {
+        eyebrow: "Bewertungen",
+        title: "Was Kundinnen und Kunden sagen",
+        subtitle:
+          "Rückmeldungen zu Massagen und HIEMT-Behandlungen.",
+        massageTitle: "Massage",
+        hiemtTitle: "HIEMT",
+        items: {
+          massage: [
+            {
+              name: "Kundin",
+              text: "Ich habe mich von Anfang an sehr wohlgefühlt. Die Massage war genau auf meine Beschwerden abgestimmt und ich bin deutlich entspannter nach Hause gegangen.",
+            },
+            {
+              name: "Kundin",
+              text: "Sehr ruhige Atmosphäre, professionelle Behandlung und spürbare Erleichterung im Nacken- und Rückenbereich. Ich komme sehr gerne wieder.",
+            },
+            {
+              name: "Kundin",
+              text: "Man merkt sofort die Erfahrung und das Einfühlungsvermögen. Die individuelle Massage hat mir wirklich sehr geholfen.",
+            },
+          ],
+          hiemt: [
+            {
+              name: "Kundin",
+              text: "Die HIEMT-Behandlung war angenehm, diskret und leicht in meinen Alltag integrierbar. Ich habe mich sehr gut beraten gefühlt.",
+            },
+            {
+              name: "Kundin",
+              text: "Schon nach den ersten Sitzungen hatte ich ein besseres Körpergefühl. Die Behandlung war unkompliziert und professionell begleitet.",
+            },
+          ],
+        },
+      },
       location: {
         eyebrow: "Anfahrt",
         title: "So findest du mich",
@@ -447,6 +481,40 @@ export default function ChristinaMassageWebsite() {
           "Válaszd ki a kezelést, az időtartamot és a kívánt időpontot. A foglaláshoz regisztráció szükséges.",
         button: "Naptár megnyitása",
         note: "Bejelentkezés vagy regisztráció kötelező",
+      },
+      testimonials: {
+        eyebrow: "Vélemények",
+        title: "Vendégvélemények",
+        subtitle:
+          "Visszajelzések a masszázsokról és a HIEMT kezelésekről.",
+        massageTitle: "Masszázs",
+        hiemtTitle: "HIEMT",
+        items: {
+          massage: [
+            {
+              name: "Vendég",
+              text: "Már az első pillanattól nagyon jól éreztem magam. A masszázs teljesen az igényeimhez igazodott, és sokkal ellazultabban mentem haza.",
+            },
+            {
+              name: "Vendég",
+              text: "Nyugodt légkör, profi kezelés és érezhető javulás a nyak- és hátterületen. Biztosan visszatérek.",
+            },
+            {
+              name: "Vendég",
+              text: "Azonnal érezhető a tapasztalat és a figyelmesség. Az egyéni masszázs valóban nagyon sokat segített nekem.",
+            },
+          ],
+          hiemt: [
+            {
+              name: "Vendég",
+              text: "A HIEMT kezelés kellemes, diszkrét és könnyen beilleszthető volt a mindennapokba. Nagyon jó tanácsadást kaptam.",
+            },
+            {
+              name: "Vendég",
+              text: "Már néhány alkalom után jobb lett a testérzetem. A kezelés egyszerű volt és végig profi kíséretet kaptam.",
+            },
+          ],
+        },
       },
       location: {
         eyebrow: "Megközelítés",
@@ -2027,6 +2095,86 @@ export default function ChristinaMassageWebsite() {
             >
               {c.booking.button}
             </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="bewertungen" className="bg-[#f8f2e9] py-16 md:py-20">
+        <div className="mx-auto max-w-7xl px-6 lg:px-10">
+          <div className="mb-10 text-center">
+            <p className="text-sm uppercase tracking-[0.28em] text-stone-500">
+              {c.testimonials.eyebrow}
+            </p>
+            <h2 className="mt-4 text-3xl font-semibold text-stone-900 md:text-5xl">
+              {c.testimonials.title}
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-stone-600 md:text-lg md:leading-8">
+              {c.testimonials.subtitle}
+            </p>
+          </div>
+
+          <div className="grid gap-10 lg:grid-cols-2">
+            <div>
+              <div className="mb-5 inline-flex rounded-full bg-[#dfe6da] px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-stone-700">
+                {c.testimonials.massageTitle}
+              </div>
+
+              <div className="space-y-5">
+                {c.testimonials.items.massage.map(
+                  (
+                    item: {
+                      name: string;
+                      text: string;
+                    },
+                    index: number
+                  ) => (
+                    <div
+                      key={`${item.name}-${index}`}
+                      className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm"
+                    >
+                      <div className="mb-3 text-xl text-[#d6b36a]">★★★★★</div>
+                      <p className="text-base leading-8 text-stone-700">
+                        {item.text}
+                      </p>
+                      <p className="mt-4 text-sm font-semibold uppercase tracking-[0.14em] text-stone-500">
+                        {item.name}
+                      </p>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-5 inline-flex rounded-full bg-[#edf4e3] px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-[#4e5f3f]">
+                {c.testimonials.hiemtTitle}
+              </div>
+
+              <div className="space-y-5">
+                {c.testimonials.items.hiemt.map(
+                  (
+                    item: {
+                      name: string;
+                      text: string;
+                    },
+                    index: number
+                  ) => (
+                    <div
+                      key={`${item.name}-${index}`}
+                      className="rounded-[2rem] border border-[#cfd8bf] bg-white p-6 shadow-sm"
+                    >
+                      <div className="mb-3 text-xl text-[#d6b36a]">★★★★★</div>
+                      <p className="text-base leading-8 text-stone-700">
+                        {item.text}
+                      </p>
+                      <p className="mt-4 text-sm font-semibold uppercase tracking-[0.14em] text-stone-500">
+                        {item.name}
+                      </p>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
