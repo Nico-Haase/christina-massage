@@ -11,6 +11,7 @@ import {
   CalendarBlock,
   CalendarBooking,
   DailyEvent,
+  SlotAvailability,
   addMinutesToTime,
   formatTimeRange,
   getBookingEndTime,

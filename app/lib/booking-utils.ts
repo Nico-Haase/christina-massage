@@ -237,7 +237,7 @@ export function getSlotAvailability(
     dayEnd?: string;
     stepMinutes?: number;
   }
-): string[] {
+): SlotAvailability[] {
   const dayStart = options?.dayStart ?? "09:00";
   const dayEnd = options?.dayEnd ?? "18:00";
   const stepMinutes = options?.stepMinutes ?? 15;
@@ -254,7 +254,7 @@ export function getSlotAvailability(
     (block) => block.block_date === selectedDate
   );
 
-  const slots: string[] = [];
+  const slots: SlotAvailability[] = [];
   const startMinutes = toMinutes(dayStart);
   const endMinutes = toMinutes(dayEnd);
 
@@ -266,9 +266,13 @@ export function getSlotAvailability(
     const slotStart = toTimeString(current);
     const slotEnd = toTimeString(current + durationMinutes);
 
+    let unavailable = false;
+
     if (selectedDate === todayKey) {
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      if (current <= currentMinutes) continue;
+      if (current <= currentMinutes) {
+        unavailable = true;
+      }
     }
 
     const overlapsBooking = relevantBookings.some((booking) =>
@@ -280,19 +284,32 @@ export function getSlotAvailability(
       )
     );
 
-    if (overlapsBooking) continue;
+    if (overlapsBooking) {
+      unavailable = true;
+    }
 
     const overlapsBlock = relevantBlocks.some((block) =>
-      isTimeRangeOverlapping(slotStart, slotEnd, block.start_time, block.end_time)
+      isTimeRangeOverlapping(
+        slotStart,
+        slotEnd,
+        block.start_time,
+        block.end_time
+      )
     );
 
-    if (overlapsBlock) continue;
+    if (overlapsBlock) {
+      unavailable = true;
+    }
 
-    slots.push(slotStart);
+    slots.push({
+      time: slotStart,
+      unavailable,
+    });
   }
 
   return slots;
 }
+
 export function parseDateKey(dateKey: string): Date {
   const [year, month, day] = dateKey.split("-").map(Number);
   return new Date(year, month - 1, day);
