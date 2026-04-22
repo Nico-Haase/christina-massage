@@ -29,6 +29,7 @@ export type DailyEvent = {
   start: string;
   end: string;
   title: string;
+  subtitle?: string;
 };
 
 export type DayStatus = "free" | "busy" | "closed";
@@ -173,12 +174,9 @@ export function getDailyEvents(
       start,
       end,
       title: isCancelled
-        ? `Storniert${booking.service_name ? ` · ${booking.service_name}` : ""}${
-            booking.full_name ? ` · ${booking.full_name}` : ""
-          }`
-        : `${booking.service_name ?? "Termin"}${
-            booking.full_name ? ` · ${booking.full_name}` : ""
-          }`,
+        ? `Storniert${booking.service_name ? ` · ${booking.service_name}` : ""}`
+        : `${booking.service_name ?? "Termin"}`,
+      subtitle: booking.full_name ?? undefined,
     };
   });
 
@@ -187,6 +185,7 @@ export function getDailyEvents(
     start: block.start_time.slice(0, 5),
     end: block.end_time.slice(0, 5),
     title: block.title?.trim() || "Blockiert",
+    subtitle: undefined,
   }));
 
   return [...bookingEvents, ...blockEvents].sort((a, b) => {
@@ -210,6 +209,7 @@ export function getDayStatus(
 ): DayStatus {
   const activeBookings = bookings.filter((booking) => {
     const normalizedStatus = String(booking.status ?? "").toLowerCase().trim();
+
     const isCancelled =
       normalizedStatus === "cancelled" ||
       normalizedStatus === "canceled" ||
@@ -221,7 +221,11 @@ export function getDayStatus(
 
   const dayBlocks = blocks.filter((block) => block.block_date === dateKey);
 
-  if (dayBlocks.some((block) => block.start_time === "00:00" && block.end_time >= "23:59")) {
+  if (
+    dayBlocks.some(
+      (block) => block.start_time === "00:00" && block.end_time >= "23:59"
+    )
+  ) {
     return "closed";
   }
 
