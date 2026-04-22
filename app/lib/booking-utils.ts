@@ -293,3 +293,23 @@ export function getSlotAvailability(
 
   return slots;
 }
+export function parseDateKey(dateKey: string): Date {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function isWeekend(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+export function getNextWorkingDay(date: Date): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + 1);
+
+  while (isWeekend(next)) {
+    next.setDate(next.getDate() + 1);
+  }
+
+  return next;
+}
