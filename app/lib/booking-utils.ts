@@ -1,4 +1,5 @@
 export type BookingStatus =
+  | "requested"
   | "pending"
   | "confirmed"
   | "cancelled"
@@ -30,6 +31,8 @@ export type DailyEvent = {
   title: string;
 };
 
+export type DayStatus = "free" | "busy" | "closed";
+
 function toMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
@@ -43,6 +46,56 @@ function toTimeString(totalMinutes: number): string {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+export function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function getTodayString(): string {
+  return formatDateKey(new Date());
+}
+
+export function getMonthStart(baseDate: Date): Date {
+  return new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+}
+
+export function getMonthEnd(baseDate: Date): Date {
+  return new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
+}
+
+export function getMonthMatrix(baseDate: Date): Date[][] {
+  const monthStart = getMonthStart(baseDate);
+  const monthEnd = getMonthEnd(baseDate);
+
+  const start = new Date(monthStart);
+  const startDay = start.getDay();
+  const mondayBasedOffset = (startDay + 6) % 7;
+  start.setDate(start.getDate() - mondayBasedOffset);
+
+  const end = new Date(monthEnd);
+  const endDay = end.getDay();
+  const sundayBasedOffset = (7 - endDay) % 7;
+  end.setDate(end.getDate() + sundayBasedOffset);
+
+  const weeks: Date[][] = [];
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    const week: Date[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    weeks.push(week);
+  }
+
+  return weeks;
+}
+
 export function addMinutesToTime(time: string, minutesToAdd: number): string {
   return toTimeString(toMinutes(time) + minutesToAdd);
 }
@@ -50,6 +103,50 @@ export function addMinutesToTime(time: string, minutesToAdd: number): string {
 export function formatTimeRange(start: string, durationMinutes: number): string {
   const end = addMinutesToTime(start, durationMinutes);
   return `${start.slice(0, 5)} – ${end.slice(0, 5)}`;
+}
+
+export function getBookingEndTime(
+  booking: Pick<CalendarBooking, "booking_time" | "duration_minutes">
+): string {
+  return addMinutesToTime(booking.booking_time, booking.duration_minutes);
+}
+
+export function isTimeRangeOverlapping(
+  startA: string,
+  endA: string,
+  startB: string,
+  endB: string
+): boolean {
+  const aStart = toMinutes(startA);
+  const aEnd = toMinutes(endA);
+  const bStart = toMinutes(startB);
+  const bEnd = toMinutes(endB);
+
+  return aStart < bEnd && bStart < aEnd;
+}
+
+export function isBookingOverlappingBlock(
+  booking: Pick<CalendarBooking, "booking_time" | "duration_minutes">,
+  block: Pick<CalendarBlock, "start_time" | "end_time">
+): boolean {
+  return isTimeRangeOverlapping(
+    booking.booking_time,
+    getBookingEndTime(booking),
+    block.start_time,
+    block.end_time
+  );
+}
+
+export function isBookingOverlappingBooking(
+  bookingA: Pick<CalendarBooking, "booking_time" | "duration_minutes">,
+  bookingB: Pick<CalendarBooking, "booking_time" | "duration_minutes">
+): boolean {
+  return isTimeRangeOverlapping(
+    bookingA.booking_time,
+    getBookingEndTime(bookingA),
+    bookingB.booking_time,
+    getBookingEndTime(bookingB)
+  );
 }
 
 export function getDailyEvents(
@@ -106,46 +203,31 @@ export function getDailyEvents(
   });
 }
 
-export function getBookingEndTime(
-  booking: Pick<CalendarBooking, "booking_time" | "duration_minutes">
-): string {
-  return addMinutesToTime(booking.booking_time, booking.duration_minutes);
-}
+export function getDayStatus(
+  dateKey: string,
+  bookings: CalendarBooking[],
+  blocks: CalendarBlock[]
+): DayStatus {
+  const activeBookings = bookings.filter((booking) => {
+    const normalizedStatus = String(booking.status ?? "").toLowerCase().trim();
+    const isCancelled =
+      normalizedStatus === "cancelled" ||
+      normalizedStatus === "canceled" ||
+      normalizedStatus === "storniert" ||
+      normalizedStatus === "abgesagt";
 
-export function isTimeRangeOverlapping(
-  startA: string,
-  endA: string,
-  startB: string,
-  endB: string
-): boolean {
-  const aStart = toMinutes(startA);
-  const aEnd = toMinutes(endA);
-  const bStart = toMinutes(startB);
-  const bEnd = toMinutes(endB);
+    return booking.booking_date === dateKey && !isCancelled;
+  });
 
-  return aStart < bEnd && bStart < aEnd;
-}
+  const dayBlocks = blocks.filter((block) => block.block_date === dateKey);
 
-export function isBookingOverlappingBlock(
-  booking: Pick<CalendarBooking, "booking_time" | "duration_minutes">,
-  block: Pick<CalendarBlock, "start_time" | "end_time">
-): boolean {
-  return isTimeRangeOverlapping(
-    booking.booking_time,
-    getBookingEndTime(booking),
-    block.start_time,
-    block.end_time
-  );
-}
+  if (dayBlocks.some((block) => block.start_time === "00:00" && block.end_time >= "23:59")) {
+    return "closed";
+  }
 
-export function isBookingOverlappingBooking(
-  bookingA: Pick<CalendarBooking, "booking_time" | "duration_minutes">,
-  bookingB: Pick<CalendarBooking, "booking_time" | "duration_minutes">
-): boolean {
-  return isTimeRangeOverlapping(
-    bookingA.booking_time,
-    getBookingEndTime(bookingA),
-    bookingB.booking_time,
-    getBookingEndTime(bookingB)
-  );
+  if (activeBookings.length > 0 || dayBlocks.length > 0) {
+    return "busy";
+  }
+
+  return "free";
 }
