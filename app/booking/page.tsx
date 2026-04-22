@@ -10,15 +10,15 @@ import MonthlyCalendar from "../components/booking/MonthlyCalendar";
 import {
   CalendarBlock,
   CalendarBooking,
+  DailyEvent,
+  addMinutesToTime,
+  formatTimeRange,
   getDailyEvents,
-  getDayStatus,
-  getMonthEnd,
-  getMonthStart,
-  getNextWorkingDay,
-  getSlotAvailability,
-  getTodayString,
-  parseDateKey,
-} from "@/app/lib/booking-utils";
+  getBookingEndTime,
+  isTimeRangeOverlapping,
+  isBookingOverlappingBlock,
+  isBookingOverlappingBooking,
+} from "../lib/booking-utils";
 
 type Language = "de" | "hu";
 type StatusType = "success" | "error" | "info";

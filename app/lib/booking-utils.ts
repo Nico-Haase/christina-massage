@@ -58,7 +58,10 @@ export function getDailyEvents(
 ): DailyEvent[] {
   const bookingEvents: DailyEvent[] = bookings.map((booking) => {
     const start = booking.booking_time.slice(0, 5);
-    const end = addMinutesToTime(booking.booking_time, booking.duration_minutes).slice(0, 5);
+    const end = addMinutesToTime(
+      booking.booking_time,
+      booking.duration_minutes
+    ).slice(0, 5);
 
     const normalizedStatus = String(booking.status ?? "").toLowerCase().trim();
 
@@ -103,7 +106,9 @@ export function getDailyEvents(
   });
 }
 
-export function getBookingEndTime(booking: Pick<CalendarBooking, "booking_time" | "duration_minutes">): string {
+export function getBookingEndTime(
+  booking: Pick<CalendarBooking, "booking_time" | "duration_minutes">
+): string {
   return addMinutesToTime(booking.booking_time, booking.duration_minutes);
 }
 
