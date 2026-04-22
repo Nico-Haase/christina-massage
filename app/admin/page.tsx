@@ -468,15 +468,38 @@ export default function AdminPage() {
                     )
                   }
                   onSelectDate={(date) => setSelectedDate(date)}
-                  getDayMeta={(date) => {
-                    const dayBookings = monthBookings.filter(
-                      (booking) => booking.booking_date === date
-                    );
-                    const dayBlocks = monthBlocks.filter(
-                      (block) => block.block_date === date
-                    );
-                    return getDayStatus(date, dayBookings, dayBlocks);
-                  }}
+                 getDayMeta={(date) => {
+  const dayBookings = monthBookings.filter(
+    (booking) => booking.booking_date === date
+  );
+
+  const dayBlocks = monthBlocks.filter(
+    (block) => block.block_date === date
+  );
+
+  const status = getDayStatus(date, dayBookings, dayBlocks);
+
+  return {
+    status,
+    freeSlots:
+      status === "free"
+        ? 9
+        : status === "busy"
+        ? Math.max(0, 9 - dayBookings.filter((booking) => {
+            const normalizedStatus = String(booking.status ?? "")
+              .toLowerCase()
+              .trim();
+
+            return !(
+              normalizedStatus === "cancelled" ||
+              normalizedStatus === "canceled" ||
+              normalizedStatus === "storniert" ||
+              normalizedStatus === "abgesagt"
+            );
+          }).length)
+        : 0,
+  };
+}}
                 />
               </div>
             </section>
