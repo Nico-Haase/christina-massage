@@ -15,6 +15,8 @@ import {
   formatTimeRange,
   getBookingEndTime,
   getDailyEvents,
+  getMonthEnd,
+  getMonthStart,
   getNextWorkingDay,
   getSlotAvailability,
   getTodayString,
