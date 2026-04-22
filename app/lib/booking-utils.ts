@@ -34,12 +34,12 @@ export type DailyEvent = {
 
 export type DayStatus = "free" | "busy" | "closed";
 
-function toMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number);
+export function toMinutes(time: string): number {
+  const [hours, minutes] = time.slice(0, 5).split(":").map(Number);
   return hours * 60 + minutes;
 }
 
-function toTimeString(totalMinutes: number): string {
+export function toTimeString(totalMinutes: number): string {
   const safeMinutes = Math.max(0, totalMinutes);
   const hours = Math.floor(safeMinutes / 60);
   const minutes = safeMinutes % 60;
@@ -72,13 +72,13 @@ export function getMonthMatrix(baseDate: Date): Date[][] {
 
   const start = new Date(monthStart);
   const startDay = start.getDay();
-  const mondayBasedOffset = (startDay + 6) % 7;
-  start.setDate(start.getDate() - mondayBasedOffset);
+  const mondayOffset = (startDay + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
 
   const end = new Date(monthEnd);
   const endDay = end.getDay();
-  const sundayBasedOffset = (7 - endDay) % 7;
-  end.setDate(end.getDate() + sundayBasedOffset);
+  const sundayOffset = (7 - endDay) % 7;
+  end.setDate(end.getDate() + sundayOffset);
 
   const weeks: Date[][] = [];
   const cursor = new Date(start);
@@ -150,6 +150,17 @@ export function isBookingOverlappingBooking(
   );
 }
 
+function isCancelledStatus(status?: string | null): boolean {
+  const normalized = String(status ?? "").toLowerCase().trim();
+
+  return (
+    normalized === "cancelled" ||
+    normalized === "canceled" ||
+    normalized === "storniert" ||
+    normalized === "abgesagt"
+  );
+}
+
 export function getDailyEvents(
   bookings: CalendarBooking[],
   blocks: CalendarBlock[]
@@ -161,21 +172,15 @@ export function getDailyEvents(
       booking.duration_minutes
     ).slice(0, 5);
 
-    const normalizedStatus = String(booking.status ?? "").toLowerCase().trim();
-
-    const isCancelled =
-      normalizedStatus === "cancelled" ||
-      normalizedStatus === "canceled" ||
-      normalizedStatus === "storniert" ||
-      normalizedStatus === "abgesagt";
+    const cancelled = isCancelledStatus(booking.status);
 
     return {
-      type: isCancelled ? "cancelled" : "booking",
+      type: cancelled ? "cancelled" : "booking",
       start,
       end,
-      title: isCancelled
+      title: cancelled
         ? `Storniert${booking.service_name ? ` · ${booking.service_name}` : ""}`
-        : `${booking.service_name ?? "Termin"}`,
+        : booking.service_name ?? "Termin",
       subtitle: booking.full_name ?? undefined,
     };
   });
@@ -207,31 +212,84 @@ export function getDayStatus(
   bookings: CalendarBooking[],
   blocks: CalendarBlock[]
 ): DayStatus {
-  const activeBookings = bookings.filter((booking) => {
-    const normalizedStatus = String(booking.status ?? "").toLowerCase().trim();
-
-    const isCancelled =
-      normalizedStatus === "cancelled" ||
-      normalizedStatus === "canceled" ||
-      normalizedStatus === "storniert" ||
-      normalizedStatus === "abgesagt";
-
-    return booking.booking_date === dateKey && !isCancelled;
-  });
+  const activeBookings = bookings.filter(
+    (booking) => booking.booking_date === dateKey && !isCancelledStatus(booking.status)
+  );
 
   const dayBlocks = blocks.filter((block) => block.block_date === dateKey);
 
-  if (
-    dayBlocks.some(
-      (block) => block.start_time === "00:00" && block.end_time >= "23:59"
-    )
-  ) {
-    return "closed";
-  }
+  const fullyClosed = dayBlocks.some(
+    (block) => block.start_time <= "00:00" && block.end_time >= "23:59"
+  );
 
-  if (activeBookings.length > 0 || dayBlocks.length > 0) {
-    return "busy";
-  }
-
+  if (fullyClosed) return "closed";
+  if (activeBookings.length > 0 || dayBlocks.length > 0) return "busy";
   return "free";
+}
+
+export function getSlotAvailability(
+  selectedDate: string,
+  durationMinutes: number,
+  bookings: CalendarBooking[],
+  blocks: CalendarBlock[],
+  options?: {
+    dayStart?: string;
+    dayEnd?: string;
+    stepMinutes?: number;
+  }
+): string[] {
+  const dayStart = options?.dayStart ?? "09:00";
+  const dayEnd = options?.dayEnd ?? "18:00";
+  const stepMinutes = options?.stepMinutes ?? 15;
+
+  const now = new Date();
+  const todayKey = formatDateKey(now);
+
+  const relevantBookings = bookings.filter(
+    (booking) =>
+      booking.booking_date === selectedDate && !isCancelledStatus(booking.status)
+  );
+
+  const relevantBlocks = blocks.filter(
+    (block) => block.block_date === selectedDate
+  );
+
+  const slots: string[] = [];
+  const startMinutes = toMinutes(dayStart);
+  const endMinutes = toMinutes(dayEnd);
+
+  for (
+    let current = startMinutes;
+    current + durationMinutes <= endMinutes;
+    current += stepMinutes
+  ) {
+    const slotStart = toTimeString(current);
+    const slotEnd = toTimeString(current + durationMinutes);
+
+    if (selectedDate === todayKey) {
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      if (current <= currentMinutes) continue;
+    }
+
+    const overlapsBooking = relevantBookings.some((booking) =>
+      isTimeRangeOverlapping(
+        slotStart,
+        slotEnd,
+        booking.booking_time,
+        getBookingEndTime(booking)
+      )
+    );
+
+    if (overlapsBooking) continue;
+
+    const overlapsBlock = relevantBlocks.some((block) =>
+      isTimeRangeOverlapping(slotStart, slotEnd, block.start_time, block.end_time)
+    );
+
+    if (overlapsBlock) continue;
+
+    slots.push(slotStart);
+  }
+
+  return slots;
 }

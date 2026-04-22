@@ -13,11 +13,12 @@ import {
   DailyEvent,
   addMinutesToTime,
   formatTimeRange,
-  getDailyEvents,
   getBookingEndTime,
-  isTimeRangeOverlapping,
+  getDailyEvents,
+  getSlotAvailability,
   isBookingOverlappingBlock,
   isBookingOverlappingBooking,
+  isTimeRangeOverlapping,
 } from "../lib/booking-utils";
 
 type Language = "de" | "hu";
