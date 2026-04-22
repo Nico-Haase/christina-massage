@@ -1000,20 +1000,30 @@ export default function BookingPage() {
                     <p className="mt-3 text-sm text-stone-600">{t.noEvents}</p>
                   ) : (
                     <div className="mt-4 space-y-3">
-                      {dailyEvents.map((event, index) => (
-    {dailyEvents.map((event, index) => (
+{dailyEvents.map((event, index) => (
   <div
     key={`${event.type}-${event.start}-${index}`}
     className={`rounded-2xl border p-4 ${
       event.type === "booking"
         ? "border-red-200 bg-red-50"
+        : event.type === "cancelled"
+        ? "border-stone-300 bg-stone-100"
         : "border-amber-200 bg-amber-50"
     }`}
   >
-    <div className="text-sm font-semibold text-stone-900">
+    <div
+      className={`text-sm font-semibold ${
+        event.type === "cancelled" ? "text-stone-600" : "text-stone-900"
+      }`}
+    >
       {event.start} – {event.end}
     </div>
-    <div className="mt-1 text-sm text-stone-700">
+
+    <div
+      className={`mt-1 text-sm ${
+        event.type === "cancelled" ? "text-stone-500" : "text-stone-700"
+      }`}
+    >
       {event.title}
     </div>
   </div>

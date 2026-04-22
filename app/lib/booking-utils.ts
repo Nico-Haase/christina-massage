@@ -13,25 +13,28 @@ export const WORKING_SLOTS = [
 export const LAST_END_TIME_MINUTES = 20 * 60 + 15;
 
 export type CalendarBooking = {
-  id?: string;
+  id: string;
   booking_date: string;
   booking_time: string;
-  duration_minutes: number;
-  service_name?: string;
-  full_name?: string;
-  email?: string;
-  price_eur?: number;
-  status?: string;
+  duration: number;
+  service?: string;
+  name?: string;
+  status?: string | null;
 };
 
 export type CalendarBlock = {
-  id?: string;
+  id: string;
   block_date: string;
   start_time: string;
   end_time: string;
+  title?: string;
+};
+
+export type DailyEvent = {
+  type: "booking" | "block" | "cancelled";
+  start: string;
+  end: string;
   title: string;
-  block_type: string;
-  note?: string | null;
 };
 
 export function timeToMinutes(value: string) {
@@ -200,25 +203,41 @@ export function getSlotAvailability(
 export function getDailyEvents(
   bookings: CalendarBooking[],
   blocks: CalendarBlock[]
-) {
-  const bookingEvents = bookings.map((booking) => ({
-    type: "booking" as const,
-    start: booking.booking_time,
-    end: minutesToTime(
-      timeToMinutes(booking.booking_time) + booking.duration_minutes
-    ),
-    title: booking.service_name || "Termin",
-    subtitle: booking.full_name || null,
-    status: booking.status || null,
-  }));
+): DailyEvent[] {
+  const bookingEvents: DailyEvent[] = bookings.map((booking) => {
+    const start = booking.booking_time.slice(0, 5);
 
-  const blockEvents = blocks.map((block) => ({
-    type: "block" as const,
-    start: block.start_time,
-    end: block.end_time,
-    title: block.title,
-    subtitle: block.block_type,
-    status: null,
+    const [hours, minutes] = booking.booking_time.split(":").map(Number);
+    const endDate = new Date();
+    endDate.setHours(hours, minutes + booking.duration, 0, 0);
+
+    const end = `${String(endDate.getHours()).padStart(2, "0")}:${String(
+      endDate.getMinutes()
+    ).padStart(2, "0")}`;
+
+    const normalizedStatus = (booking.status ?? "").toLowerCase();
+
+    const isCancelled =
+      normalizedStatus === "cancelled" ||
+      normalizedStatus === "canceled" ||
+      normalizedStatus === "storniert" ||
+      normalizedStatus === "abgesagt";
+
+    return {
+      type: isCancelled ? "cancelled" : "booking",
+      start,
+      end,
+      title: isCancelled
+        ? `Storniert${booking.service ? ` · ${booking.service}` : ""}`
+        : `${booking.service ?? "Termin"}${booking.name ? ` · ${booking.name}` : ""}`,
+    };
+  });
+
+  const blockEvents: DailyEvent[] = blocks.map((block) => ({
+    type: "block",
+    start: block.start_time.slice(0, 5),
+    end: block.end_time.slice(0, 5),
+    title: block.title || "Blockiert",
   }));
 
   return [...bookingEvents, ...blockEvents].sort((a, b) =>
