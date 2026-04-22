@@ -477,27 +477,35 @@ export default function AdminPage() {
     (block) => block.block_date === date
   );
 
+  const activeBookings = dayBookings.filter((booking) => {
+    const normalizedStatus = String(booking.status ?? "").toLowerCase().trim();
+
+    return !(
+      normalizedStatus === "cancelled" ||
+      normalizedStatus === "canceled" ||
+      normalizedStatus === "storniert" ||
+      normalizedStatus === "abgesagt"
+    );
+  });
+
   const status = getDayStatus(date, dayBookings, dayBlocks);
+
+  const freeSlots =
+    status === "closed"
+      ? 0
+      : Math.max(0, 9 - activeBookings.length);
 
   return {
     status,
-    freeSlots:
-      status === "free"
-        ? 9
-        : status === "busy"
-        ? Math.max(0, 9 - dayBookings.filter((booking) => {
-            const normalizedStatus = String(booking.status ?? "")
-              .toLowerCase()
-              .trim();
-
-            return !(
-              normalizedStatus === "cancelled" ||
-              normalizedStatus === "canceled" ||
-              normalizedStatus === "storniert" ||
-              normalizedStatus === "abgesagt"
-            );
-          }).length)
-        : 0,
+    label:
+      status === "closed"
+        ? "Geschlossen"
+        : freeSlots === 0
+        ? "Ausgebucht"
+        : `${freeSlots} frei`,
+    bookingCount: activeBookings.length,
+    blockCount: dayBlocks.length,
+    freeSlots,
   };
 }}
                 />
