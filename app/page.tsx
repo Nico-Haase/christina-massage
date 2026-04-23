@@ -39,6 +39,7 @@ export default function ChristinaMassageWebsite() {
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const servicesSliderRef = useRef<HTMLDivElement | null>(null);
+  const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
 
   useEffect(() => {
     const loadSession = async () => {
