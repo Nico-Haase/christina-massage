@@ -320,7 +320,10 @@ export default function BookingPage() {
 
   const selectedService = services[selectedServiceIndex];
   const selectedOption = selectedService.options[selectedOptionIndex];
-
+const dailyBlocks = useMemo(
+  () => monthBlocks.filter((block) => block.block_date === selectedDate),
+  [monthBlocks, selectedDate]
+);
   const bookingReady = useMemo(() => {
     return isLoggedIn && acceptedTerms && !!selectedSlotTime && !!selectedDate;
   }, [isLoggedIn, acceptedTerms, selectedSlotTime, selectedDate]);
