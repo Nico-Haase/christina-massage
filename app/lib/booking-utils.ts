@@ -33,7 +33,10 @@ export type DailyEvent = {
 };
 
 export type DayStatus = "free" | "busy" | "closed";
-
+export type SlotAvailability = {
+  time: string;
+  unavailable: boolean;
+};
 export function toMinutes(time: string): number {
   const [hours, minutes] = time.slice(0, 5).split(":").map(Number);
   return hours * 60 + minutes;
