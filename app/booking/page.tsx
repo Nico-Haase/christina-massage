@@ -920,9 +920,9 @@ export default function BookingPage() {
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {availableSlots.map((slot) => (
                     <button
-                      key={slot}
+                      key={slot.time}
                       type="button"
-                      onClick={() => setSelectedSlotTime(slot)}
+                      onClick={() => setSelectedSlotTime(slot.time)}
                       className={`rounded-2xl border px-4 py-4 text-left transition ${
                         selectedSlotTime === slot
                           ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28] shadow-sm"
