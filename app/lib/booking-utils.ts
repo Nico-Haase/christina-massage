@@ -34,6 +34,11 @@ export type DailyEvent = {
 
 export type DayStatus = "free" | "busy" | "closed";
 
+export type SlotAvailability = {
+  time: string;
+  unavailable: boolean;
+};
+
 export function toMinutes(time: string): number {
   const [hours, minutes] = time.slice(0, 5).split(":").map(Number);
   return hours * 60 + minutes;
@@ -54,13 +59,13 @@ export function formatDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function getTodayString(): string {
+  return formatDateKey(new Date());
+}
+
 export function parseDateKey(dateKey: string): Date {
   const [year, month, day] = dateKey.split("-").map(Number);
   return new Date(year, month - 1, day);
-}
-
-export function getTodayString(): string {
-  return formatDateKey(new Date());
 }
 
 export function isWeekend(date: Date): boolean {
@@ -207,7 +212,7 @@ export function getDailyEvents(
   });
 
   const blockEvents: DailyEvent[] = blocks.map((block) => ({
-    type: "block",
+    type: "block" as const,
     start: block.start_time.slice(0, 5),
     end: block.end_time.slice(0, 5),
     title: block.title?.trim() || "Blockiert",
@@ -259,10 +264,12 @@ export function getSlotAvailability(
     dayEnd?: string;
     stepMinutes?: number;
   }
-): string[] {
+): SlotAvailability[] {
   const dayStart = options?.dayStart ?? "09:00";
-  const dayEnd = options?.dayEnd ?? "18:00";
-  const stepMinutes = options?.stepMinutes ?? 15;
+  const dayEnd = options?.dayEnd ?? "19:00";
+
+  // WICHTIG: wie davor, immer 1 Stunde 15 Minuten Abstand
+  const stepMinutes = options?.stepMinutes ?? 75;
 
   const now = new Date();
   const todayKey = formatDateKey(now);
@@ -277,7 +284,7 @@ export function getSlotAvailability(
     (block) => block.block_date === selectedDate
   );
 
-  const slots: string[] = [];
+  const slots: SlotAvailability[] = [];
   const startMinutes = toMinutes(dayStart);
   const endMinutes = toMinutes(dayEnd);
 
@@ -289,10 +296,12 @@ export function getSlotAvailability(
     const slotStart = toTimeString(current);
     const slotEnd = toTimeString(current + durationMinutes);
 
+    let unavailable = false;
+
     if (selectedDate === todayKey) {
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       if (current <= currentMinutes) {
-        continue;
+        unavailable = true;
       }
     }
 
@@ -305,7 +314,9 @@ export function getSlotAvailability(
       )
     );
 
-    if (overlapsBooking) continue;
+    if (overlapsBooking) {
+      unavailable = true;
+    }
 
     const overlapsBlock = relevantBlocks.some((block) =>
       isTimeRangeOverlapping(
@@ -316,9 +327,14 @@ export function getSlotAvailability(
       )
     );
 
-    if (overlapsBlock) continue;
+    if (overlapsBlock) {
+      unavailable = true;
+    }
 
-    slots.push(slotStart);
+    slots.push({
+      time: slotStart,
+      unavailable,
+    });
   }
 
   return slots;

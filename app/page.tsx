@@ -2099,85 +2099,16 @@ export default function ChristinaMassageWebsite() {
         </div>
       </section>
 
-      <section id="bewertungen" className="bg-[#f8f2e9] py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          <div className="mb-10 text-center">
-            <p className="text-sm uppercase tracking-[0.28em] text-stone-500">
-              {c.testimonials.eyebrow}
-            </p>
-            <h2 className="mt-4 text-3xl font-semibold text-stone-900 md:text-5xl">
-              {c.testimonials.title}
-            </h2>
-            <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-stone-600 md:text-lg md:leading-8">
-              {c.testimonials.subtitle}
-            </p>
-          </div>
+      <ReviewsList language={language} refreshKey={reviewsRefreshKey} />
 
-          <div className="grid gap-10 lg:grid-cols-2">
-            <div>
-              <div className="mb-5 inline-flex rounded-full bg-[#dfe6da] px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-stone-700">
-                {c.testimonials.massageTitle}
-              </div>
-
-              <div className="space-y-5">
-                {c.testimonials.items.massage.map(
-                  (
-                    item: {
-                      name: string;
-                      text: string;
-                    },
-                    index: number
-                  ) => (
-                    <div
-                      key={`${item.name}-${index}`}
-                      className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm"
-                    >
-                      <div className="mb-3 text-xl text-[#d6b36a]">★★★★★</div>
-                      <p className="text-base leading-8 text-stone-700">
-                        {item.text}
-                      </p>
-                      <p className="mt-4 text-sm font-semibold uppercase tracking-[0.14em] text-stone-500">
-                        {item.name}
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-5 inline-flex rounded-full bg-[#edf4e3] px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-[#4e5f3f]">
-                {c.testimonials.hiemtTitle}
-              </div>
-
-              <div className="space-y-5">
-                {c.testimonials.items.hiemt.map(
-                  (
-                    item: {
-                      name: string;
-                      text: string;
-                    },
-                    index: number
-                  ) => (
-                    <div
-                      key={`${item.name}-${index}`}
-                      className="rounded-[2rem] border border-[#cfd8bf] bg-white p-6 shadow-sm"
-                    >
-                      <div className="mb-3 text-xl text-[#d6b36a]">★★★★★</div>
-                      <p className="text-base leading-8 text-stone-700">
-                        {item.text}
-                      </p>
-                      <p className="mt-4 text-sm font-semibold uppercase tracking-[0.14em] text-stone-500">
-                        {item.name}
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+<section className="bg-[#f6efe5] pb-16 md:pb-20">
+  <div className="mx-auto max-w-4xl px-6 lg:px-10">
+    <ReviewForm
+      language={language}
+      onReviewSubmitted={() => setReviewsRefreshKey((prev) => prev + 1)}
+    />
+  </div>
+</section>
 
       <section id="anfahrt" className="py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
