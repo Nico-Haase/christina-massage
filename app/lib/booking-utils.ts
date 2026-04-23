@@ -59,13 +59,13 @@ export function formatDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function getTodayString(): string {
-  return formatDateKey(new Date());
-}
-
 export function parseDateKey(dateKey: string): Date {
   const [year, month, day] = dateKey.split("-").map(Number);
   return new Date(year, month - 1, day);
+}
+
+export function getTodayString(): string {
+  return formatDateKey(new Date());
 }
 
 export function isWeekend(date: Date): boolean {
@@ -193,11 +193,7 @@ export function getDailyEvents(
 ): DailyEvent[] {
   const bookingEvents: DailyEvent[] = bookings.map((booking) => {
     const start = booking.booking_time.slice(0, 5);
-    const end = addMinutesToTime(
-      booking.booking_time,
-      booking.duration_minutes
-    ).slice(0, 5);
-
+    const end = getBookingEndTime(booking).slice(0, 5);
     const cancelled = isCancelledStatus(booking.status);
 
     return {
@@ -212,33 +208,39 @@ export function getDailyEvents(
   });
 
   const blockEvents: DailyEvent[] = blocks.map((block) => ({
-    type: "block" as const,
+    type: "block",
     start: block.start_time.slice(0, 5),
     end: block.end_time.slice(0, 5),
     title: block.title?.trim() || "Blockiert",
     subtitle: undefined,
   }));
 
+  const order: Record<DailyEvent["type"], number> = {
+    booking: 0,
+    block: 1,
+    cancelled: 2,
+  };
+
   return [...bookingEvents, ...blockEvents].sort((a, b) => {
     if (a.start !== b.start) return a.start.localeCompare(b.start);
-    if (a.type === b.type) return a.end.localeCompare(b.end);
-
-    const order: Record<DailyEvent["type"], number> = {
-      booking: 0,
-      block: 1,
-      cancelled: 2,
-    };
-
-    return order[a.type] - order[b.type];
+    if (a.type !== b.type) return order[a.type] - order[b.type];
+    return a.end.localeCompare(b.end);
   });
 }
 
 export function getDayStatus(
   dateKey: string,
   bookings: CalendarBooking[],
-  blocks: CalendarBlock[]
+  blocks: CalendarBlock[],
+  _durationMinutes?: number
 ): DayStatus {
-  const activeBookings = bookings.filter(
+  const date = parseDateKey(dateKey);
+
+  if (isWeekend(date)) {
+    return "closed";
+  }
+
+  const dayBookings = bookings.filter(
     (booking) =>
       booking.booking_date === dateKey && !isCancelledStatus(booking.status)
   );
@@ -249,9 +251,11 @@ export function getDayStatus(
     (block) => block.start_time <= "00:00" && block.end_time >= "23:59"
   );
 
-  if (fullyClosed) return "closed";
-  if (activeBookings.length > 0 || dayBlocks.length > 0) return "busy";
-  return "free";
+  if (fullyClosed) {
+    return "closed";
+  }
+
+  return dayBookings.length > 0 || dayBlocks.length > 0 ? "busy" : "free";
 }
 
 export function getSlotAvailability(
@@ -261,14 +265,18 @@ export function getSlotAvailability(
   blocks: CalendarBlock[],
   options?: {
     dayStart?: string;
-    dayEnd?: string;
+    lastStart?: string;
     stepMinutes?: number;
   }
 ): SlotAvailability[] {
-  const dayStart = options?.dayStart ?? "09:00";
-  const dayEnd = options?.dayEnd ?? "19:00";
+  const date = parseDateKey(selectedDate);
 
-  // WICHTIG: wie davor, immer 1 Stunde 15 Minuten Abstand
+  if (isWeekend(date)) {
+    return [];
+  }
+
+  const dayStart = options?.dayStart ?? "09:00";
+  const lastStart = options?.lastStart ?? "19:00";
   const stepMinutes = options?.stepMinutes ?? 75;
 
   const now = new Date();
@@ -284,13 +292,21 @@ export function getSlotAvailability(
     (block) => block.block_date === selectedDate
   );
 
+  const fullDayClosed = relevantBlocks.some(
+    (block) => block.start_time <= "00:00" && block.end_time >= "23:59"
+  );
+
+  if (fullDayClosed) {
+    return [];
+  }
+
   const slots: SlotAvailability[] = [];
   const startMinutes = toMinutes(dayStart);
-  const endMinutes = toMinutes(dayEnd);
+  const lastStartMinutes = toMinutes(lastStart);
 
   for (
     let current = startMinutes;
-    current + durationMinutes <= endMinutes;
+    current <= lastStartMinutes;
     current += stepMinutes
   ) {
     const slotStart = toTimeString(current);
