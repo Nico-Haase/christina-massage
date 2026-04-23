@@ -34,11 +34,6 @@ export type DailyEvent = {
 
 export type DayStatus = "free" | "busy" | "closed";
 
-export type SlotAvailability = {
-  time: string;
-  unavailable: boolean;
-};
-
 export function toMinutes(time: string): number {
   const [hours, minutes] = time.slice(0, 5).split(":").map(Number);
   return hours * 60 + minutes;
@@ -59,8 +54,29 @@ export function formatDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function parseDateKey(dateKey: string): Date {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function getTodayString(): string {
   return formatDateKey(new Date());
+}
+
+export function isWeekend(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+export function getNextWorkingDay(date: Date): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + 1);
+
+  while (isWeekend(next)) {
+    next.setDate(next.getDate() + 1);
+  }
+
+  return next;
 }
 
 export function getMonthStart(baseDate: Date): Date {
@@ -243,7 +259,7 @@ export function getSlotAvailability(
     dayEnd?: string;
     stepMinutes?: number;
   }
-): SlotAvailability[] {
+): string[] {
   const dayStart = options?.dayStart ?? "09:00";
   const dayEnd = options?.dayEnd ?? "18:00";
   const stepMinutes = options?.stepMinutes ?? 15;
@@ -261,7 +277,7 @@ export function getSlotAvailability(
     (block) => block.block_date === selectedDate
   );
 
-  const slots: SlotAvailability[] = [];
+  const slots: string[] = [];
   const startMinutes = toMinutes(dayStart);
   const endMinutes = toMinutes(dayEnd);
 
@@ -273,12 +289,10 @@ export function getSlotAvailability(
     const slotStart = toTimeString(current);
     const slotEnd = toTimeString(current + durationMinutes);
 
-    let unavailable = false;
-
     if (selectedDate === todayKey) {
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       if (current <= currentMinutes) {
-        unavailable = true;
+        continue;
       }
     }
 
@@ -291,9 +305,7 @@ export function getSlotAvailability(
       )
     );
 
-    if (overlapsBooking) {
-      unavailable = true;
-    }
+    if (overlapsBooking) continue;
 
     const overlapsBlock = relevantBlocks.some((block) =>
       isTimeRangeOverlapping(
@@ -304,36 +316,10 @@ export function getSlotAvailability(
       )
     );
 
-    if (overlapsBlock) {
-      unavailable = true;
-    }
+    if (overlapsBlock) continue;
 
-    slots.push({
-      time: slotStart,
-      unavailable,
-    });
+    slots.push(slotStart);
   }
 
   return slots;
-}
-
-export function parseDateKey(dateKey: string): Date {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-export function isWeekend(date: Date): boolean {
-  const day = date.getDay();
-  return day === 0 || day === 6;
-}
-
-export function getNextWorkingDay(date: Date): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + 1);
-
-  while (isWeekend(next)) {
-    next.setDate(next.getDate() + 1);
-  }
-
-  return next;
 }

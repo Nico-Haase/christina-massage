@@ -10,25 +10,17 @@ import MonthlyCalendar from "../components/booking/MonthlyCalendar";
 import {
   CalendarBlock,
   CalendarBooking,
-  DailyEvent,
-  SlotAvailability,
-  addMinutesToTime,
-  formatTimeRange,
-  getBookingEndTime,
   getDailyEvents,
+  getDayStatus,
   getMonthEnd,
   getMonthStart,
   getNextWorkingDay,
   getSlotAvailability,
   getTodayString,
   parseDateKey,
-  isBookingOverlappingBlock,
-  isBookingOverlappingBooking,
-  isTimeRangeOverlapping,
-} from "../lib/booking-utils";
+} from "@/app/lib/booking-utils";
 
 type Language = "de" | "hu";
-type StatusType = "success" | "error" | "info";
 
 type DurationOption = {
   duration: number;
@@ -43,6 +35,8 @@ type Service = {
   };
   options: DurationOption[];
 };
+
+type StatusType = "success" | "error" | "info";
 
 const services: Service[] = [
   {
@@ -143,17 +137,12 @@ export default function BookingPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<StatusType>("info");
-
-  const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
   const t = useMemo(() => {
     return {
@@ -169,12 +158,6 @@ export default function BookingPage() {
         language === "de"
           ? "Login oder Registrierung sind vor der Buchung verpflichtend."
           : "Foglalás előtt a bejelentkezés vagy regisztráció kötelező.",
-      topAuth:
-        language === "de"
-          ? "Login / Registrierung"
-          : "Bejelentkezés / Regisztráció",
-      topAccount:
-        language === "de" ? "Mein Benutzerkonto" : "Saját fiókom",
       stepCalendar:
         language === "de" ? "1. Tag auswählen" : "1. Nap kiválasztása",
       stepService:
@@ -255,6 +238,10 @@ export default function BookingPage() {
       selected: language === "de" ? "Ausgewählt" : "Kiválasztva",
       free: language === "de" ? "Frei" : "Szabad",
       blocked: language === "de" ? "Blockiert" : "Lezárva",
+      authSuccessRegister:
+        language === "de"
+          ? "Registrierung erfolgreich. Bitte prüfe gegebenenfalls dein Postfach."
+          : "Sikeres regisztráció. Kérjük ellenőrizd a postaládádat.",
       authSuccessLogin:
         language === "de" ? "Erfolgreich eingeloggt." : "Sikeres bejelentkezés.",
       bookingSuccess:
@@ -277,67 +264,25 @@ export default function BookingPage() {
           : "Erre a napra még nincs bejegyzés.",
       calendarLoading:
         language === "de" ? "Kalender wird geladen..." : "Naptár betöltése...",
-      forgotPassword:
-        language === "de" ? "Passwort vergessen?" : "Elfelejtetted a jelszavad?",
-      resendConfirmation:
-        language === "de"
-          ? "Bestätigungsmail erneut senden"
-          : "Megerősítő email újraküldése",
-      sending:
-        language === "de" ? "Wird gesendet..." : "Küldés...",
-      resending:
-        language === "de" ? "Wird erneut gesendet..." : "Újraküldés...",
-      forgotPasswordNeedEmail:
-        language === "de"
-          ? "Bitte gib zuerst deine E-Mail-Adresse ein."
-          : "Kérjük először add meg az email címedet.",
-      forgotPasswordSuccess:
-        language === "de"
-          ? "Passwort-Reset-Mail wurde gesendet. Bitte prüfe auch den Spam-Ordner."
-          : "A jelszó-visszaállító email elküldve. Kérjük ellenőrizd a spam mappát is.",
-      confirmedLoginHint:
-        language === "de"
-          ? "E-Mail bestätigt. Bitte jetzt einloggen."
-          : "Az email megerősítve. Kérjük most jelentkezz be.",
-      registerLoginHint:
-        language === "de"
-          ? "Registrierung erfolgreich. Bitte bestätige zuerst deine E-Mail und logge dich danach ein."
-          : "Sikeres regisztráció. Kérjük először erősítsd meg az emailedet, majd jelentkezz be.",
-      loginFailed:
-        language === "de"
-          ? "Login fehlgeschlagen. Bitte prüfe E-Mail, Passwort und ob deine E-Mail bereits bestätigt wurde."
-          : "Sikertelen bejelentkezés. Kérjük ellenőrizd az email címet, a jelszót és hogy megerősítetted-e már az emailedet.",
-      resendFailed:
-        language === "de"
-          ? "Bestätigungsmail konnte gerade nicht erneut gesendet werden. Bitte kurz warten und erneut versuchen."
-          : "A megerősítő email most nem küldhető újra. Kérjük várj egy kicsit és próbáld újra.",
-      resendSuccess:
-        language === "de"
-          ? "Bestätigungsmail wurde erneut gesendet."
-          : "A megerősítő email újra elküldve.",
     };
   }, [language]);
 
   const selectedService = services[selectedServiceIndex];
   const selectedOption = selectedService.options[selectedOptionIndex];
-const dailyBlocks = useMemo(
-  () => monthBlocks.filter((block) => block.block_date === selectedDate),
-  [monthBlocks, selectedDate]
-);
+
   const bookingReady = useMemo(() => {
     return isLoggedIn && acceptedTerms && !!selectedSlotTime && !!selectedDate;
   }, [isLoggedIn, acceptedTerms, selectedSlotTime, selectedDate]);
 
-  const availableSlots = useMemo<SlotAvailability[]>(() => {
-  if (!selectedDate) return [];
-
-  return getSlotAvailability(
-    selectedDate,
-    selectedOption.duration,
-    dailyBookings,
-    dailyBlocks
-  );
-}, [selectedDate, selectedOption.duration, dailyBookings, dailyBlocks]);
+  const availableSlots = useMemo(() => {
+    if (!selectedDate) return [];
+    return getSlotAvailability(
+      selectedDate,
+      selectedOption.duration,
+      dailyBookings,
+      dailyBlockedTimes
+    );
+  }, [selectedDate, selectedOption.duration, dailyBookings, dailyBlockedTimes]);
 
   const dailyEvents = useMemo(() => {
     return getDailyEvents(dailyBookings, dailyBlockedTimes);
@@ -385,9 +330,14 @@ const dailyBlocks = useMemo(
     if (params.get("confirmed") === "1") {
       setIsRegisterMode(false);
       setShowAuth(true);
-      setStatusMessage(t.confirmedLoginHint, "success");
+      setStatusMessage(
+        language === "de"
+          ? "E-Mail bestätigt. Bitte jetzt einloggen."
+          : "Az email megerősítve. Kérjük most jelentkezz be.",
+        "success"
+      );
     }
-  }, [t.confirmedLoginHint]);
+  }, [language]);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -504,9 +454,7 @@ const dailyBlocks = useMemo(
     setLoading(true);
 
     try {
-      const normalizedEmail = normalizeEmail(email);
-
-      if (!normalizedEmail || !password.trim()) {
+      if (!email.trim() || !password.trim()) {
         setStatusMessage(
           language === "de"
             ? "Bitte E-Mail und Passwort eingeben."
@@ -527,12 +475,11 @@ const dailyBlocks = useMemo(
           return;
         }
 
-        const { data, error } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password: password.trim(),
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
           options: {
             data: { full_name: fullName.trim() },
-            emailRedirectTo: `${window.location.origin}/booking?auth=1&mode=login&confirmed=1`,
           },
         });
 
@@ -543,101 +490,31 @@ const dailyBlocks = useMemo(
 
         setShowAuth(false);
         setIsRegisterMode(false);
+        setStatusMessage(
+          language === "de"
+            ? "Registrierung erfolgreich. Bitte bestätige zuerst deine E-Mail und logge dich danach ein."
+            : "Sikeres regisztráció. Kérjük először erősítsd meg az emailedet, majd jelentkezz be.",
+          "success"
+        );
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
 
-        if (data.user && !data.session) {
-          setStatusMessage(t.registerLoginHint, "success");
-        } else {
-          setStatusMessage(
-            language === "de"
-              ? "Registrierung erfolgreich."
-              : "Sikeres regisztráció.",
-            "success"
-          );
+        if (error) {
+          setStatusMessage(error.message, "error");
+          return;
         }
 
-        return;
+        setShowAuth(false);
+        setStatusMessage(t.authSuccessLogin, "success");
       }
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password: password.trim(),
-      });
-
-      if (error) {
-        setStatusMessage(t.loginFailed, "error");
-        return;
-      }
-
-      setShowAuth(false);
-      setStatusMessage(t.authSuccessLogin, "success");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    setStatusMessage("", "info");
-
-    const normalizedEmail = normalizeEmail(email);
-
-    if (!normalizedEmail) {
-      setStatusMessage(t.forgotPasswordNeedEmail, "error");
-      return;
-    }
-
-    setResetLoading(true);
-
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    setResetLoading(false);
-
-    if (error) {
-      setStatusMessage(error.message, "error");
-      return;
-    }
-
-    setStatusMessage(t.forgotPasswordSuccess, "success");
-  };
-
-  const handleResendConfirmation = async () => {
-  setStatusMessage("", "info");
-
-  const normalizedEmail = normalizeEmail(email);
-
-  console.log("Resend gestartet für:", normalizedEmail);
-
-  if (!normalizedEmail) {
-    setStatusMessage(t.forgotPasswordNeedEmail, "error");
-    return;
-  }
-
-  setResendLoading(true);
-
-  const { data, error } = await supabase.auth.resend({
-    type: "signup",
-    email: normalizedEmail,
-    options: {
-      emailRedirectTo: `${window.location.origin}/booking?auth=1&mode=login&confirmed=1`,
-    },
-  });
-
-  console.log("Resend Antwort data:", data);
-  console.log("Resend Antwort error:", error);
-
-  setResendLoading(false);
-
-  if (error) {
-    setStatusMessage(
-      `${t.resendFailed}${error.message ? `: ${error.message}` : ""}`,
-      "error"
-    );
-    return;
-  }
-
-  setStatusMessage(t.resendSuccess, "success");
-};
   const handleBookingSubmit = async () => {
     setStatusMessage("", "info");
 
@@ -676,11 +553,9 @@ const dailyBlocks = useMemo(
       return;
     }
 
-    const selectedSlot = availableSlots.find(
-      (slot) => slot.time === selectedSlotTime
-    );
+    const selectedSlot = availableSlots.find((slot) => slot === selectedSlotTime);
 
-    if (!selectedSlot || selectedSlot.unavailable) {
+    if (!selectedSlot) {
       setStatusMessage(
         language === "de"
           ? "Dieser Zeitraum ist nicht verfügbar."
@@ -705,7 +580,7 @@ const dailyBlocks = useMemo(
         body: JSON.stringify({
           user_id: user.id,
           name: finalName,
-          email: user.email ?? normalizeEmail(email),
+          email: user.email ?? email.trim(),
           service: selectedService.name[language],
           date: selectedDate,
           time: selectedSlotTime,
@@ -727,17 +602,19 @@ const dailyBlocks = useMemo(
           setStatusMessage(result?.message || t.bookingError, "error");
         }
 
-        try {
-          const refreshResponse = await fetch(
-            `/api/booking-availability?date=${selectedDate}`,
-            { cache: "no-store" }
-          );
-          const refreshResult = await refreshResponse.json();
-          if (refreshResponse.ok) {
-            setDailyBookings(refreshResult.bookings ?? []);
-            setDailyBlockedTimes(refreshResult.blocks ?? []);
-          }
-        } catch {}
+        await (async () => {
+          try {
+            const refreshResponse = await fetch(
+              `/api/booking-availability?date=${selectedDate}`,
+              { cache: "no-store" }
+            );
+            const refreshResult = await refreshResponse.json();
+            if (refreshResponse.ok) {
+              setDailyBookings(refreshResult.bookings ?? []);
+              setDailyBlockedTimes(refreshResult.blocks ?? []);
+            }
+          } catch {}
+        })();
 
         return;
       }
@@ -835,409 +712,391 @@ const dailyBlocks = useMemo(
       </header>
 
       <div className="min-h-[calc(100vh-88px)] p-4 sm:p-6 md:p-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-6 flex justify-end">
-            {!isLoggedIn ? (
-              <button
-                onClick={() => {
-                  setShowAuth(true);
-                  setIsRegisterMode(false);
-                }}
-                className="rounded-full border border-[#405e3f] px-5 py-2 text-sm font-medium text-[#405e3f] transition hover:bg-[#eef3e6]"
-              >
-                {t.topAuth}
-              </button>
-            ) : (
-              <Link
-                href="/my-bookings"
-                className="rounded-full border border-[#405e3f] px-5 py-2 text-sm font-medium text-[#405e3f] transition hover:bg-[#eef3e6]"
-              >
-                {t.topAccount}
-              </Link>
-            )}
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-            <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-black/5">
-              <div className="border-b border-stone-200 px-5 py-5 sm:px-6 md:px-8">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
-                      {t.onlineBooking}
-                    </p>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">
-                      {t.title}
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm text-stone-600 md:text-base">
-                      {t.subtitle}
-                    </p>
-                  </div>
-
-                  <div className="w-fit rounded-2xl bg-[#eef3e6] px-4 py-3 text-sm font-medium text-[#556246]">
-                    {t.loginRequired}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-8 px-5 py-6 sm:px-6 md:px-8 md:py-8">
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-black/5">
+            <div className="border-b border-stone-200 px-5 py-5 sm:px-6 md:px-8">
+              <div className="flex flex-col gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-stone-900">
-                    {t.stepCalendar}
-                  </h2>
-
-                  <div className="mt-4">
-                    {calendarLoading ? (
-                      <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5 text-sm text-stone-600">
-                        {t.calendarLoading}
-                      </div>
-                    ) : (
-                      <MonthlyCalendar
-                        visibleMonth={visibleMonth}
-                        selectedDate={selectedDate}
-                        onPrevMonth={() =>
-                          setVisibleMonth(
-                            new Date(
-                              visibleMonth.getFullYear(),
-                              visibleMonth.getMonth() - 1,
-                              1
-                            )
-                          )
-                        }
-                        onNextMonth={() =>
-                          setVisibleMonth(
-                            new Date(
-                              visibleMonth.getFullYear(),
-                              visibleMonth.getMonth() + 1,
-                              1
-                            )
-                          )
-                        }
-                        onSelectDate={(date) => setSelectedDate(date)}
-                        getDayMeta={(date) => {
-                          const dayBookings = calendarBookings.filter(
-                            (booking) => booking.booking_date === date
-                          );
-                          const dayBlocks = calendarBlockedTimes.filter(
-                            (block) => block.block_date === date
-                          );
-
-                          return getDayStatus(
-                            date,
-                            dayBookings,
-                            dayBlocks,
-                            selectedOption.duration
-                          );
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-semibold text-stone-900">
-                    {t.stepService}
-                  </h2>
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    {services.map((service, index) => (
-                      <button
-                        key={service.key}
-                        onClick={() => {
-                          setSelectedServiceIndex(index);
-                          setSelectedOptionIndex(0);
-                          setSelectedSlotTime(null);
-                        }}
-                        className={`rounded-3xl border p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
-                          index === selectedServiceIndex
-                            ? "border-[#405e3f] bg-[#405e3f] text-white"
-                            : "border-stone-200 bg-white text-stone-900"
-                        }`}
-                      >
-                        <div className="text-base font-semibold">
-                          {service.name[language]}
-                        </div>
-                        <div
-                          className={`mt-2 text-sm ${
-                            index === selectedServiceIndex
-                              ? "text-white/70"
-                              : "text-stone-500"
-                          }`}
-                        >
-                          {service.options
-                            .map((o) => `${o.duration} Min`)
-                            .join(" / ")}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-semibold text-stone-900">
-                    {t.stepDuration}
-                  </h2>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                    {selectedService.options.map((option, index) => (
-                      <button
-                        key={`${selectedService.key}-${option.duration}`}
-                        onClick={() => {
-                          setSelectedOptionIndex(index);
-                          setSelectedSlotTime(null);
-                        }}
-                        className={`rounded-3xl border p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
-                          index === selectedOptionIndex
-                            ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28]"
-                            : "border-stone-200 bg-white text-stone-900"
-                        }`}
-                      >
-                        <div className="text-base font-semibold">
-                          {option.duration} Min
-                        </div>
-                        <div className="mt-5 text-xl font-semibold">
-                          {option.price} €
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
-                  <h2 className="text-lg font-semibold text-stone-900">
-                    {t.dailyOverview}
-                  </h2>
-
-                  {!selectedDate ? (
-                    <p className="mt-3 text-sm text-stone-600">{t.choosePlease}</p>
-                  ) : dailyEvents.length === 0 ? (
-                    <p className="mt-3 text-sm text-stone-600">{t.noEvents}</p>
-                  ) : (
-                    <div className="mt-4 space-y-3">
-{dailyEvents.map((event, index) => (
-  <div
-    key={`${event.type}-${event.start}-${index}`}
-    className={`rounded-2xl border p-4 ${
-      event.type === "booking"
-        ? "border-red-200 bg-red-50"
-        : event.type === "cancelled"
-        ? "border-stone-300 bg-stone-100"
-        : "border-amber-200 bg-amber-50"
-    }`}
-  >
-    <div
-      className={`text-sm font-semibold ${
-        event.type === "cancelled" ? "text-stone-600" : "text-stone-900"
-      }`}
-    >
-      {event.start} – {event.end}
-    </div>
-
-    <div
-      className={`mt-1 text-sm ${
-        event.type === "cancelled" ? "text-stone-500" : "text-stone-700"
-      }`}
-    >
-      {event.title}
-    </div>
-  </div>
-))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-semibold text-stone-900">
-                    {t.stepTime}
-                  </h2>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot.time}
-                        onClick={() => {
-                          if (slot.unavailable) return;
-                          setSelectedSlotTime(slot.time);
-                        }}
-                        className={`rounded-2xl border px-4 py-4 text-left transition ${
-                          slot.unavailable
-                            ? "cursor-not-allowed border-red-200 bg-red-50 text-red-400"
-                            : selectedSlotTime === slot.time
-                            ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28] shadow-sm"
-                            : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-400"
-                        }`}
-                      >
-                        <div className="text-lg font-semibold">{slot.time}</div>
-                        <div className="mt-1 text-xs uppercase tracking-wide">
-                          {slot.unavailable
-                            ? t.blocked
-                            : selectedSlotTime === slot.time
-                            ? t.selected
-                            : t.free}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
-                  <h3 className="font-semibold text-amber-900">
-                    {t.conditionsTitle}
-                  </h3>
-                  <p className="mt-1 text-sm leading-6 text-amber-800">
-                    {t.conditionsText}
+                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+                    {t.onlineBooking}
+                  </p>
+                  <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">
+                    {t.title}
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm text-stone-600 md:text-base">
+                    {t.subtitle}
                   </p>
                 </div>
 
-                {!isLoggedIn ? (
-                  <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-stone-900">
-                          {t.authTitle}
-                        </h3>
-                        <p className="mt-1 text-sm text-stone-600">
-                          {t.authText}
-                        </p>
-                      </div>
+                <div className="w-fit rounded-2xl bg-[#eef3e6] px-4 py-3 text-sm font-medium text-[#556246]">
+                  {t.loginRequired}
+                </div>
+              </div>
+            </div>
 
-                      <button
-                        onClick={() => {
-                          setShowAuth(true);
-                          setStatusMessage("", "info");
-                        }}
-                        className="rounded-2xl bg-[#405e3f] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-                      >
-                        {t.authButton}
-                      </button>
+            <div className="grid gap-8 px-5 py-6 sm:px-6 md:px-8 md:py-8">
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">
+                  {t.stepCalendar}
+                </h2>
+
+                <div className="mt-4">
+                  {calendarLoading ? (
+                    <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5 text-sm text-stone-600">
+                      {t.calendarLoading}
                     </div>
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-[#cfd8bf] bg-[#eef3e6] p-5">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-[#2e3a28]">
-                          {t.loggedInAs} {sessionEmail}
-                        </h3>
-                        <p className="mt-1 text-sm text-[#556246]">
-                          {t.loggedInText}
-                        </p>
-                      </div>
+                  ) : (
+                    <MonthlyCalendar
+                      visibleMonth={visibleMonth}
+                      selectedDate={selectedDate}
+                      onPrevMonth={() =>
+                        setVisibleMonth(
+                          new Date(
+                            visibleMonth.getFullYear(),
+                            visibleMonth.getMonth() - 1,
+                            1
+                          )
+                        )
+                      }
+                      onNextMonth={() =>
+                        setVisibleMonth(
+                          new Date(
+                            visibleMonth.getFullYear(),
+                            visibleMonth.getMonth() + 1,
+                            1
+                          )
+                        )
+                      }
+                      onSelectDate={(date) => setSelectedDate(date)}
+                      getDayMeta={(date) => {
+                        const dayBookings = calendarBookings.filter(
+                          (booking) => booking.booking_date === date
+                        );
+                        const dayBlocks = calendarBlockedTimes.filter(
+                          (block) => block.block_date === date
+                        );
 
-                      <button
-                        onClick={handleLogout}
-                        className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-stone-800"
-                      >
-                        {t.logout}
-                      </button>
-                    </div>
+                        const status = getDayStatus(date, dayBookings, dayBlocks);
 
-                    <label className="mt-4 flex items-start gap-3 rounded-2xl bg-white p-4 text-sm text-stone-700">
-                      <input
-                        type="checkbox"
-                        checked={acceptedTerms}
-                        onChange={(e) => setAcceptedTerms(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded"
-                      />
-                      <span>{t.acceptTerms}</span>
-                    </label>
+                        return {
+                          status,
+                          label:
+                            status === "closed"
+                              ? "Geschlossen"
+                              : status === "busy"
+                              ? "Belegt"
+                              : "Frei",
+                          bookingCount: dayBookings.length,
+                          blockCount: dayBlocks.length,
+                        };
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
 
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">
+                  {t.stepService}
+                </h2>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {services.map((service, index) => (
                     <button
-                      onClick={handleBookingSubmit}
-                      disabled={!bookingReady || loading}
-                      className={`mt-4 w-full rounded-2xl px-5 py-3 text-sm font-semibold transition ${
-                        bookingReady && !loading
-                          ? "bg-[#405e3f] text-white hover:opacity-90"
-                          : "cursor-not-allowed bg-stone-300 text-stone-500"
+                      key={service.key}
+                      onClick={() => {
+                        setSelectedServiceIndex(index);
+                        setSelectedOptionIndex(0);
+                        setSelectedSlotTime(null);
+                      }}
+                      className={`rounded-3xl border p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+                        index === selectedServiceIndex
+                          ? "border-[#405e3f] bg-[#405e3f] text-white"
+                          : "border-stone-200 bg-white text-stone-900"
                       }`}
                     >
-                      {loading ? t.saving : t.requestNow}
-                    </button>
-
-                    {!bookingReady && (
-                      <div className="mt-3 rounded-2xl bg-white p-4 text-sm text-stone-700">
-                        {!isLoggedIn
-                          ? language === "de"
-                            ? "Bitte zuerst einloggen oder registrieren."
-                            : "Kérjük először jelentkezz be vagy regisztrálj."
-                          : !selectedDate
-                          ? language === "de"
-                            ? "Bitte zuerst einen Tag auswählen."
-                            : "Kérjük először válassz napot."
-                          : !selectedSlotTime
-                          ? language === "de"
-                            ? "Bitte eine freie Uhrzeit auswählen."
-                            : "Kérjük válassz szabad időpontot."
-                          : !acceptedTerms
-                          ? language === "de"
-                            ? "Bitte die Buchungsbedingungen bestätigen."
-                            : "Kérjük fogadd el a foglalási feltételeket."
-                          : ""}
+                      <div className="text-base font-semibold">
+                        {service.name[language]}
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div
+                        className={`mt-2 text-sm ${
+                          index === selectedServiceIndex
+                            ? "text-white/70"
+                            : "text-stone-500"
+                        }`}
+                      >
+                        {service.options.map((o) => `${o.duration} Min`).join(" / ")}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                {message && (
-                  <div
-                    className={`rounded-2xl border px-4 py-3 text-sm ${messageStyles}`}
-                  >
-                    {message}
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">
+                  {t.stepDuration}
+                </h2>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                  {selectedService.options.map((option, index) => (
+                    <button
+                      key={`${selectedService.key}-${option.duration}`}
+                      onClick={() => {
+                        setSelectedOptionIndex(index);
+                        setSelectedSlotTime(null);
+                      }}
+                      className={`rounded-3xl border p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+                        index === selectedOptionIndex
+                          ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28]"
+                          : "border-stone-200 bg-white text-stone-900"
+                      }`}
+                    >
+                      <div className="text-base font-semibold">
+                        {option.duration} Min
+                      </div>
+                      <div className="mt-5 text-xl font-semibold">
+                        {option.price} €
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
+                <h2 className="text-lg font-semibold text-stone-900">
+                  {t.dailyOverview}
+                </h2>
+
+                {!selectedDate ? (
+                  <p className="mt-3 text-sm text-stone-600">{t.choosePlease}</p>
+                ) : dailyEvents.length === 0 ? (
+                  <p className="mt-3 text-sm text-stone-600">{t.noEvents}</p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {dailyEvents.map((event, index) => (
+                      <div
+                        key={`${event.type}-${event.start}-${index}`}
+                        className={`rounded-2xl border p-4 ${
+                          event.type === "booking"
+                            ? "border-red-200 bg-red-50"
+                            : event.type === "cancelled"
+                            ? "border-stone-300 bg-stone-100"
+                            : "border-amber-200 bg-amber-50"
+                        }`}
+                      >
+                        <div
+                          className={`text-sm font-semibold ${
+                            event.type === "cancelled"
+                              ? "text-stone-600"
+                              : "text-stone-900"
+                          }`}
+                        >
+                          {event.start} – {event.end}
+                        </div>
+                        <div
+                          className={`mt-1 text-sm ${
+                            event.type === "cancelled"
+                              ? "text-stone-500"
+                              : "text-stone-700"
+                          }`}
+                        >
+                          {event.title}
+                        </div>
+                        {event.subtitle && (
+                          <div className="mt-1 text-xs text-stone-500">
+                            {event.subtitle}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-            </section>
 
-            <aside className="space-y-6">
-              <div className="rounded-3xl bg-[#405e3f] p-6 text-white shadow-sm">
-                <p className="text-sm uppercase tracking-[0.2em] text-white/70">
-                  {t.summary}
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">
+                  {t.stepTime}
+                </h2>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {availableSlots.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setSelectedSlotTime(slot)}
+                      className={`rounded-2xl border px-4 py-4 text-left transition ${
+                        selectedSlotTime === slot
+                          ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28] shadow-sm"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-400"
+                      }`}
+                    >
+                      <div className="text-lg font-semibold">{slot}</div>
+                      <div className="mt-1 text-xs uppercase tracking-wide">
+                        {selectedSlotTime === slot ? t.selected : t.free}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                <h3 className="font-semibold text-amber-900">
+                  {t.conditionsTitle}
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-amber-800">
+                  {t.conditionsText}
                 </p>
+              </div>
 
-                <div className="mt-5 space-y-4">
-                  <div className="rounded-2xl border border-[#d6e2cf] bg-white/10 p-4">
-                    <div className="text-sm text-white/70">{t.service}</div>
-                    <div className="mt-1 text-lg font-semibold">
-                      {selectedService.name[language]}
+              {!isLoggedIn ? (
+                <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-stone-900">
+                        {t.authTitle}
+                      </h3>
+                      <p className="mt-1 text-sm text-stone-600">
+                        {t.authText}
+                      </p>
                     </div>
+
+                    <button
+                      onClick={() => {
+                        setShowAuth(true);
+                        setStatusMessage("", "info");
+                      }}
+                      className="rounded-2xl bg-[#405e3f] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                    >
+                      {t.authButton}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-[#cfd8bf] bg-[#eef3e6] p-5">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#2e3a28]">
+                        {t.loggedInAs} {sessionEmail}
+                      </h3>
+                      <p className="mt-1 text-sm text-[#556246]">
+                        {t.loggedInText}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-stone-800"
+                    >
+                      {t.logout}
+                    </button>
                   </div>
 
-                  <div className="rounded-2xl border border-[#d6e2cf] bg-white/10 p-4">
-                    <div className="text-sm text-white/70">{t.durationPrice}</div>
-                    <div className="mt-1 text-lg font-semibold">
-                      {selectedOption.duration} Min
-                    </div>
-                    <div className="text-white/80">{selectedOption.price} €</div>
-                  </div>
+                  <label className="mt-4 flex items-start gap-3 rounded-2xl bg-white p-4 text-sm text-stone-700">
+                    <input
+                      type="checkbox"
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded"
+                    />
+                    <span>{t.acceptTerms}</span>
+                  </label>
 
-                  <div className="rounded-2xl border border-[#d6e2cf] bg-white/10 p-4">
-                    <div className="text-sm text-white/70">{t.appointment}</div>
-                    <div className="mt-1 text-lg font-semibold">
-                      {selectedDate || "-"}
+                  <button
+                    onClick={handleBookingSubmit}
+                    disabled={!bookingReady || loading}
+                    className={`mt-4 w-full rounded-2xl px-5 py-3 text-sm font-semibold transition ${
+                      bookingReady && !loading
+                        ? "bg-[#405e3f] text-white hover:opacity-90"
+                        : "cursor-not-allowed bg-stone-300 text-stone-500"
+                    }`}
+                  >
+                    {loading ? t.saving : t.requestNow}
+                  </button>
+
+                  {!bookingReady && (
+                    <div className="mt-3 rounded-2xl bg-white p-4 text-sm text-stone-700">
+                      {!isLoggedIn
+                        ? language === "de"
+                          ? "Bitte zuerst einloggen oder registrieren."
+                          : "Kérjük először jelentkezz be vagy regisztrálj."
+                        : !selectedDate
+                        ? language === "de"
+                          ? "Bitte zuerst einen Tag auswählen."
+                          : "Kérjük először válassz napot."
+                        : !selectedSlotTime
+                        ? language === "de"
+                          ? "Bitte eine freie Uhrzeit auswählen."
+                          : "Kérjük válassz szabad időpontot."
+                        : !acceptedTerms
+                        ? language === "de"
+                          ? "Bitte die Buchungsbedingungen bestätigen."
+                          : "Kérjük fogadd el a foglalási feltételeket."
+                        : ""}
                     </div>
-                    <div className="text-white/80">
-                      {selectedSlotTime
-                        ? `${selectedSlotTime} Uhr`
-                        : t.choosePlease}
-                    </div>
+                  )}
+                </div>
+              )}
+
+              {message && (
+                <div
+                  className={`rounded-2xl border px-4 py-3 text-sm ${messageStyles}`}
+                >
+                  {message}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <aside className="space-y-6">
+            <div className="rounded-3xl bg-[#405e3f] p-6 text-white shadow-sm">
+              <p className="text-sm uppercase tracking-[0.2em] text-white/70">
+                {t.summary}
+              </p>
+
+              <div className="mt-5 space-y-4">
+                <div className="rounded-2xl border border-[#d6e2cf] bg-white/10 p-4">
+                  <div className="text-sm text-white/70">{t.service}</div>
+                  <div className="mt-1 text-lg font-semibold">
+                    {selectedService.name[language]}
                   </div>
                 </div>
 
-                <Link
-                  href="/my-bookings"
-                  className="mt-4 block text-center text-sm underline text-white/80 hover:text-white"
-                >
-                  {t.myBookings}
-                </Link>
+                <div className="rounded-2xl border border-[#d6e2cf] bg-white/10 p-4">
+                  <div className="text-sm text-white/70">{t.durationPrice}</div>
+                  <div className="mt-1 text-lg font-semibold">
+                    {selectedOption.duration} Min
+                  </div>
+                  <div className="text-white/80">{selectedOption.price} €</div>
+                </div>
+
+                <div className="rounded-2xl border border-[#d6e2cf] bg-white/10 p-4">
+                  <div className="text-sm text-white/70">{t.appointment}</div>
+                  <div className="mt-1 text-lg font-semibold">
+                    {selectedDate || "-"}
+                  </div>
+                  <div className="text-white/80">
+                    {selectedSlotTime
+                      ? `${selectedSlotTime} Uhr`
+                      : t.choosePlease}
+                  </div>
+                </div>
               </div>
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                <h3 className="text-lg font-semibold text-stone-900">
-                  {t.myBookings}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-stone-600">
-                  {t.myBookingsText}
-                </p>
-              </div>
-            </aside>
-          </div>
+              <Link
+                href="/my-bookings"
+                className="mt-4 block text-center text-sm underline text-white/80 hover:text-white"
+              >
+                {t.myBookings}
+              </Link>
+            </div>
+
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+              <h3 className="text-lg font-semibold text-stone-900">
+                {t.myBookings}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                {t.myBookingsText}
+              </p>
+            </div>
+          </aside>
         </div>
       </div>
 
@@ -1295,45 +1154,13 @@ const dailyBlocks = useMemo(
                 <label className="mb-2 block text-sm font-medium text-stone-700">
                   {t.password}
                 </label>
-
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-2xl border border-stone-200 px-4 py-3 pr-14 outline-none focus:border-[#567a57]"
-                    placeholder={t.passwordPlaceholder}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-sm text-stone-600 hover:bg-stone-100"
-                  >
-                    {showPassword ? "🙈" : "👁"}
-                  </button>
-                </div>
-
-                {!isRegisterMode && (
-                  <div className="mt-2 flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={handleForgotPassword}
-                      disabled={resetLoading}
-                      className="text-left text-sm text-[#405e3f] underline disabled:opacity-60"
-                    >
-                      {resetLoading ? t.sending : t.forgotPassword}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleResendConfirmation}
-                      disabled={resendLoading}
-                      className="text-left text-sm text-[#405e3f] underline disabled:opacity-60"
-                    >
-                      {resendLoading ? t.resending : t.resendConfirmation}
-                    </button>
-                  </div>
-                )}
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-stone-200 px-4 py-3 outline-none focus:border-[#567a57]"
+                  placeholder={t.passwordPlaceholder}
+                />
               </div>
 
               <button
