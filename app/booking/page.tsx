@@ -931,7 +931,7 @@ export default function BookingPage() {
                     >
                       <div className="text-lg font-semibold">{slot.time}</div>
                       <div className="mt-1 text-xs uppercase tracking-wide">
-                        {selectedSlotTime === slot ? t.selected : t.free}
+                        {selectedSlotTime === slot.time ? t.selected : t.free}
                       </div>
                     </button>
                   ))}
