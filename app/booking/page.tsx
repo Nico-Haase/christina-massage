@@ -924,7 +924,7 @@ export default function BookingPage() {
                       type="button"
                       onClick={() => setSelectedSlotTime(slot.time)}
                       className={`rounded-2xl border px-4 py-4 text-left transition ${
-                        selectedSlotTime === slot
+                        selectedSlotTime === slot.time
                           ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28] shadow-sm"
                           : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-400"
                       }`}
