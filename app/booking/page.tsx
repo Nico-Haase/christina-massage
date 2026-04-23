@@ -553,7 +553,7 @@ export default function BookingPage() {
       return;
     }
 
-    const selectedSlot = availableSlots.find((slot) => slot === selectedSlotTime);
+    const selectedSlot = availableSlots.find((slot) => slot.time === selectedSlotTime);
 
     if (!selectedSlot) {
       setStatusMessage(
