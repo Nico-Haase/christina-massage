@@ -788,6 +788,7 @@ export default function BookingPage() {
                               : "Frei",
                           bookingCount: dayBookings.length,
                           blockCount: dayBlocks.length,
+                          freeSlots: 0,
                         };
                       }}
                     />
