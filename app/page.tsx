@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import ReviewsList from "./components/ReviewsList";
+import ReviewForm from "./components/ReviewForm";
 
 type Language = "de" | "hu";
 
