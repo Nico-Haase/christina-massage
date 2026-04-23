@@ -232,18 +232,13 @@ export function getDayStatus(
   dateKey: string,
   bookings: CalendarBooking[],
   blocks: CalendarBlock[],
-  _durationMinutes?: number
+  durationMinutes = 60
 ): DayStatus {
   const date = parseDateKey(dateKey);
 
   if (isWeekend(date)) {
     return "closed";
   }
-
-  const dayBookings = bookings.filter(
-    (booking) =>
-      booking.booking_date === dateKey && !isCancelledStatus(booking.status)
-  );
 
   const dayBlocks = blocks.filter((block) => block.block_date === dateKey);
 
@@ -255,7 +250,19 @@ export function getDayStatus(
     return "closed";
   }
 
-  return dayBookings.length > 0 || dayBlocks.length > 0 ? "busy" : "free";
+  const slots = getSlotAvailability(dateKey, durationMinutes, bookings, blocks, {
+    dayStart: "09:00",
+    lastStart: "19:00",
+    stepMinutes: 75,
+  });
+
+  if (slots.length === 0) {
+    return "closed";
+  }
+
+  const hasFreeSlot = slots.some((slot) => !slot.unavailable);
+
+  return hasFreeSlot ? "free" : "busy";
 }
 
 export function getSlotAvailability(
