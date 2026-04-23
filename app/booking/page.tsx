@@ -929,7 +929,7 @@ export default function BookingPage() {
                           : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-400"
                       }`}
                     >
-                      <div className="text-lg font-semibold">{slot}</div>
+                      <div className="text-lg font-semibold">{slot.time}</div>
                       <div className="mt-1 text-xs uppercase tracking-wide">
                         {selectedSlotTime === slot ? t.selected : t.free}
                       </div>
