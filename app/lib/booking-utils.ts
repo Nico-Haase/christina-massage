@@ -33,10 +33,12 @@ export type DailyEvent = {
 };
 
 export type DayStatus = "free" | "busy" | "closed";
+
 export type SlotAvailability = {
   time: string;
   unavailable: boolean;
 };
+
 export function toMinutes(time: string): number {
   const [hours, minutes] = time.slice(0, 5).split(":").map(Number);
   return hours * 60 + minutes;
@@ -216,7 +218,8 @@ export function getDayStatus(
   blocks: CalendarBlock[]
 ): DayStatus {
   const activeBookings = bookings.filter(
-    (booking) => booking.booking_date === dateKey && !isCancelledStatus(booking.status)
+    (booking) =>
+      booking.booking_date === dateKey && !isCancelledStatus(booking.status)
   );
 
   const dayBlocks = blocks.filter((block) => block.block_date === dateKey);
@@ -250,7 +253,8 @@ export function getSlotAvailability(
 
   const relevantBookings = bookings.filter(
     (booking) =>
-      booking.booking_date === selectedDate && !isCancelledStatus(booking.status)
+      booking.booking_date === selectedDate &&
+      !isCancelledStatus(booking.status)
   );
 
   const relevantBlocks = blocks.filter(
