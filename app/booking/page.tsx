@@ -919,22 +919,30 @@ export default function BookingPage() {
 
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {availableSlots.map((slot) => (
-                    <button
-                      key={slot.time}
-                      type="button"
-                      onClick={() => setSelectedSlotTime(slot.time)}
-                      className={`rounded-2xl border px-4 py-4 text-left transition ${
-                        selectedSlotTime === slot.time
-                          ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28] shadow-sm"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-400"
-                      }`}
-                    >
-                      <div className="text-lg font-semibold">{slot.time}</div>
-                      <div className="mt-1 text-xs uppercase tracking-wide">
-                        {selectedSlotTime === slot.time ? t.selected : t.free}
-                      </div>
-                    </button>
-                  ))}
+  <button
+    key={slot.time}
+    type="button"
+    onClick={() => !slot.unavailable && setSelectedSlotTime(slot.time)}
+    disabled={slot.unavailable}
+    className={`rounded-2xl border px-4 py-4 text-left transition ${
+      slot.unavailable
+        ? "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed"
+        : selectedSlotTime === slot.time
+        ? "border-[#567a57] bg-[#eef3e6] text-[#2e3a28] shadow-sm"
+        : "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-400"
+    }`}
+  >
+    <div className="text-lg font-semibold">{slot.time}</div>
+
+    <div className="mt-1 text-xs uppercase tracking-wide">
+      {slot.unavailable
+        ? "Nicht verfügbar"
+        : selectedSlotTime === slot.time
+        ? t.selected
+        : t.free}
+    </div>
+  </button>
+))}
                 </div>
               </div>
 
