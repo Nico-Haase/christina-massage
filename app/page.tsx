@@ -106,14 +106,14 @@ export default function ChristinaMassageWebsite() {
         text: [
           "Die Harmonie von Bewegung und Körper ist nicht nur mein Beruf, sondern meine Lebensphilosophie. Die Liebe zu Sport und Bewegung prägt mein Leben seit meiner Kindheit. Meine berufliche Laufbahn begann ich 2007 als Trainerin, und seither bin ich fasziniert von der erstaunlichen Widerstandsfähigkeit des menschlichen Körpers.",
           "Seit über 10 Jahren helfe ich meinen Gästen, dem Alltagsstress zu entfliehen. Bei jeder Behandlung stelle ich die individuellen Bedürfnisse in den Vordergrund, um ein persönliches Massageerlebnis zu schaffen. Ob Muskelentspannung, Stressabbau, Regeneration oder Erholung – ich passe jede Behandlung individuell an.",
-          "Ich glaube, dass Massage mehr ist als nur eine körperliche Behandlung. Sie ist eine wertvolle Auszeit – ein Moment der Ruhe, in dem der Alltag von uns abfällt und wir inneren Frieden und Balance finden.",
+          "Ich glaube, dass Massage mehr ist als nur eine körperliche Behandlung. Sie ist eine wertvolle Auszeit – ein Moment der Ruhe, in dem der Alltag von uns abfällt und wir inneren Frieden und Balance finden. Auch in meinem Leben lege ich Wert auf die Harmonie von Körper, Seele und Geist und begegne meinen Gästen mit dieser Philosophie.",
         ],
         qualificationsTitle:
           "Mein beruflicher Werdegang und meine Qualifikationen",
         qualificationsText: [
-          "Ich begann meine Karriere 2007 als Aerobic-Trainerin und erwarb dabei fundierte anatomische Kenntnisse. Meine Leidenschaft für Bewegung führte mich schnell zu Pilates, und 2016 wurde die Massage-Therapie zu meinem Beruf.",
-          "Im Laufe meiner beruflichen Laufbahn habe ich unter anderem die schwedische Massage, Wellness-Massagen, die chinesische (Tui-Na) und die indische (Champi) Kopfmassage sowie Spezialtechniken wie Schröpftherapie, Flossing, Narbenbehandlung, Lymphdrainage und Vagus-Therapie erlernt.",
-          "Der Ansatz des Faszien-Distorsionsmodells (FDM) ist zentral für meine Arbeit und trägt effektiv zur Linderung von Bindegewebsverspannungen bei. Ich betrachte den Menschen als Ganzes.",
+          "Ich begann meine Karriere 2007 als Aerobic-Trainerin und erwarb dabei fundierte anatomische Kenntnisse. Meine Leidenschaft für Bewegung führte mich schnell zu Pilates, und 2016 wurde die Massage-Therapie zu meinem Beruf. Seitdem habe ich mein Repertoire stetig erweitert, um meinen Klienten die bestmögliche Unterstützung zu bieten.",
+          "Im Laufe meiner beruflichen Laufbahn habe ich unter anderem die schwedische Massage, Wellness-Massagen, die chinesische (Tui-na) und die indische (Champi) Kopfmassage sowie Spezialtechniken wie Schröpftherapie, Flossing und Narbenbehandlung, Lymphdrainage und Vagus-Therapie erlernt. Der Ansatz des Faszien-Distorsionsmodells (FDM) ist zentral für meine Arbeit und trägt effektiv zur Linderung von Bindegewebsverspannungen bei.",
+          "Mein Interesse an den Zusammenhängen zwischen den Körperteilen führte mich zur Viszeraltherapie, zur Behandlung des Leaky-Gut-Syndroms und zur Ernährung sowie zur ganzheitlichen Naturheilkunde (Reflexzonenmassage). Ich bin überzeugt, dass für eine wahre Heilung die Unterdrückung von Symptomen nicht ausreicht: Wir müssen die Ursachen aufdecken. Als Naturheilpraktikerin und Masseurin betrachte ich den Menschen als Ganzes. Ich glaube, dass die Einheit von Körper, Geist und Seele die Grundlage für die Regeneration des Körpers schafft. Für mich ist Lernen ein lebenslanger Prozess, denn so kann ich meinen Gästen stets mit aktuellem Wissen zur Erhaltung ihrer Gesundheit helfen.",
         ],
       },
       services: {
@@ -340,15 +340,15 @@ export default function ChristinaMassageWebsite() {
         eyebrow: "Rólam",
         title: "Szakértelem és biztonság – Az Ön egyensúlyáért",
         text: [
-          "A mozgás és a test harmóniája nemcsak a hivatásom, hanem az életszemléletem is. A sport és a mozgás szeretete gyermekkorom óta végigkíséri az életemet.",
-          "Több mint 10 éve segítek vendégeimnek kiszakadni a mindennapi stresszből. Minden kezelés során az egyéni igények állnak a középpontban.",
-          "Hiszem, hogy a masszázs több mint testi kezelés. Ez egy értékes énidő – a nyugalom pillanata.",
+          "A mozgás és a test harmóniája nemcsak a hivatásom, hanem az életformám. A sport és a mozgás szeretete kisgyermek korom óta meghatározza az életemet. 2007-ben indultam el a szakmai úton mint tréner, és az évek során teljesen lenyűgözött az emberi test \"csodája\" és teherbírása.",
+          "Több mint 10 éve segítem vendégeimet, hogy valódi megkönnyebbülést nyújtsak a mindennapi terheik alól. Minden kezelésnél az egyéni igényeket helyezem előtérbe, hogy személyreszabott masszázsélményt nyújtsak. Legyen szó izomfeszültség oldásáról, stresszcsökkentésről, regenerációról vagy feltöltődésről, minden kezelést az egyéni igényekhez igazítok.",
+          "Hiszem, hogy a masszázs nem csupán fizikai kezelés, hanem minőségi idő önmagunkkal – egy csendes megálló, ahol a mindennapok terhei lehullanak, és újra rátalálhatunk a belső nyugalomra és az egyensúlyra. Saját életemben is a test, lélek és szellem harmóniájának megteremtését tartom szem előtt, és ezzel a szemlélettel fordulok vendégeim felé.",
         ],
         qualificationsTitle: "Szakmai pályafutásom és képesítéseim",
         qualificationsText: [
-          "Pályafutásomat 2007-ben aerobik edzőként kezdtem, ahol alapos anatómiai ismeretekre tettem szert.",
-          "Szakmai pályafutásom során többek között elsajátítottam a svédmasszázst, wellness masszázsokat, a kínai és indiai fejmasszázst, valamint speciális technikákat is.",
-          "Az FDM megközelítés központi szerepet játszik a munkámban, és az embert egészként szemlélem.",
+          "Pályafutásomat 2007-ben aerobic oktatóként kezdtem, ahol megalapoztam anatómiai ismereteimet. A mozgás szeretete hamar a Pilates felé terelt, majd 2016-ban a masszázsterápia vált a hivatásommá. Azóta folyamatosan bővítem eszköztáramat, hogy a hozzám fordulóknak a legkomplexebb segítséget nyújthassam.",
+          "Szakmai utam során elsajátítottam többek között a svéd-, wellness, a kínai (Tui-na) és az indiai (Champi) fejmasszázst, valamint olyan speciális technikákat, mint a köpölyterápia, a flossing és a hegkezelés, nyirokkezelés, vagus terápia. Munkámban meghatározó a Fascia Disztorziós Modell (FDM) szemlélete, amely segít a kötőszöveti feszültségek hatékony oldásában.",
+          "Érdeklődésem a test összefüggései iránt a viscerális terápia, az áteresztő bél és a konyha, valamint a holisztikus szemléletű természetgyógyászat (reflexológia) irányába vezetett. Hiszek abban, hogy a valódi gyógyuláshoz nem elegendő a tünetek elnyomása: az okokat kell feltárnunk. Természetgyógyászként és masszőrként a teljes embert figyelem. Vallom, hogy a test, a lélek és a szellem egysége teremti meg azt az egyensúlyt, amelyben a szervezet képes a regenerációra. Számomra a tanulás élethosszig tartó folyamat, hiszen ez teszi lehetővé, hogy vendégeimnek mindig a legnaprakészebb tudással segítsek az egészségük megőrzésében.",
         ],
       },
       services: {
