@@ -1,11 +1,30 @@
+// =====================================================================
+// app/api/admin/update-booking-status/route.ts  —  KOMPLETTE DATEI
+// Diese Datei komplett ersetzen.
+// =====================================================================
+//
+// Neu: Wird der Status auf "cancelled" gesetzt UND es gibt eine
+//      google_event_id, dann wird der Termin auch im Kalender gelöscht.
+// =====================================================================
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
   sendCustomerCancelledEmail,
   sendCustomerConfirmedEmail,
 } from "@/app/lib/email";
+import { deleteCalendarEvent } from "@/app/lib/google";
 
-type BookingStatus = "requested" | "confirmed" | "cancelled";
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
 
 type UpdatedBooking = {
   id: string;
@@ -16,71 +35,12 @@ type UpdatedBooking = {
   booking_time: string;
   duration_minutes: number;
   status: string;
+  google_event_id?: string | null;
 };
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "").trim();
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: "Nicht autorisiert." },
-        { status: 401 }
-      );
-    }
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !anonKey) {
-      return NextResponse.json(
-        { success: false, message: "Supabase Konfiguration fehlt." },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, anonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { success: false, message: "Ungültige Sitzung." },
-        { status: 401 }
-      );
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError || !profile?.is_admin) {
-      return NextResponse.json(
-        { success: false, message: "Kein Admin-Zugriff." },
-        { status: 403 }
-      );
-    }
-
-    const { bookingId, status } = (await req.json()) as {
-      bookingId: string;
-      status: BookingStatus;
-    };
+    const { bookingId, status } = await req.json();
 
     if (!bookingId || !status) {
       return NextResponse.json(
@@ -89,24 +49,52 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data, error } = await supabase
-      .from("bookings")
-      .update({ status })
-      .eq("id", bookingId)
-      .select(
-        "id, full_name, email, service_name, booking_date, booking_time, duration_minutes, status"
-      )
-      .single();
+    const { data, error } = await supabase.rpc(
+      "admin_update_booking_status",
+      {
+        p_booking_id: bookingId,
+        p_status: status,
+      }
+    );
 
     if (error) {
+      console.error("RPC Error:", error);
       return NextResponse.json(
         { success: false, message: error.message },
         { status: 500 }
       );
     }
 
-    const booking = data as UpdatedBooking;
+    const booking: UpdatedBooking | undefined =
+      Array.isArray(data) && data.length > 0 ? data[0] : undefined;
 
+    if (!booking) {
+      return NextResponse.json(
+        { success: false, message: "Buchung nicht gefunden." },
+        { status: 404 }
+      );
+    }
+
+    // --- Google Kalender Eintrag löschen, wenn storniert ---
+    // Die RPC liefert google_event_id evtl. nicht mit; holen wir uns sicher.
+    if (status === "cancelled") {
+      try {
+        const { data: bookingRow } = await supabase
+          .from("bookings")
+          .select("google_event_id")
+          .eq("id", bookingId)
+          .single();
+
+        const eventId = bookingRow?.google_event_id;
+        if (eventId) {
+          await deleteCalendarEvent(eventId);
+        }
+      } catch (calErr) {
+        console.error("GOOGLE KALENDER LOESCHEN FEHLGESCHLAGEN:", calErr);
+      }
+    }
+
+    // --- E-Mails an den Kunden ---
     try {
       if (status === "confirmed") {
         await sendCustomerConfirmedEmail({
@@ -137,6 +125,7 @@ export async function POST(req: Request) {
       message: "Status erfolgreich aktualisiert.",
     });
   } catch (err: any) {
+    console.error("Server Error:", err);
     return NextResponse.json(
       { success: false, message: err?.message || "Serverfehler." },
       { status: 500 }

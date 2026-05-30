@@ -1,12 +1,28 @@
+// =====================================================================
+// app/api/bookings/route.ts  —  KOMPLETTE DATEI
+// Diese Datei komplett ersetzen (alles markieren, löschen, das hier rein).
+//
+// Enthält:
+//   - die ursprüngliche Buchungs-Logik
+//   - 15-Min-Raster + 15-Min-Puffer (Aufgabe 1, serverseitig)
+//   - Google-Kalender-Eintrag bei neuer Buchung (Aufgabe 2)
+// =====================================================================
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
   sendCustomerBookingRequestEmail,
   sendOwnerNewBookingEmail,
 } from "@/app/lib/email";
+import { createCalendarEvent } from "@/app/lib/google";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// --- Arbeitszeit-Konstanten (müssen mit booking-utils.ts übereinstimmen) ---
+const BUFFER_MINUTES = 15;
+const DAY_START_MINUTES = 9 * 60;   // 09:00 frühester Start
+const LAST_START_MINUTES = 19 * 60; // 19:00 spätester Start
 
 function errorResponse(
   message: string,
@@ -43,8 +59,6 @@ function isWeekend(dateString: string) {
   return day === 0 || day === 6;
 }
 
-const LAST_END_TIME_MINUTES = 20 * 60 + 15;
-
 export async function POST(req: Request) {
   try {
     if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -54,16 +68,12 @@ export async function POST(req: Request) {
       });
     }
 
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      supabaseServiceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     const body = await req.json();
 
@@ -114,9 +124,22 @@ export async function POST(req: Request) {
 
     const requestedStart = timeToMinutes(time);
     const requestedEnd = requestedStart + numericDuration;
+    const requestedEndWithBuffer = requestedEnd + BUFFER_MINUTES;
 
-    if (requestedEnd > LAST_END_TIME_MINUTES) {
-      return errorResponse("Dieser Termin liegt außerhalb der Arbeitszeiten.", 400);
+    // Start muss im erlaubten Fenster liegen (09:00 - 19:00)
+    if (
+      requestedStart < DAY_START_MINUTES ||
+      requestedStart > LAST_START_MINUTES
+    ) {
+      return errorResponse(
+        "Dieser Termin liegt außerhalb der Arbeitszeiten.",
+        400
+      );
+    }
+
+    // Start muss auf einem 15-Minuten-Raster liegen
+    if (requestedStart % 15 !== 0) {
+      return errorResponse("Ungültige Startzeit.", 400);
     }
 
     const { data: existingBookings, error: existingBookingsError } =
@@ -142,10 +165,18 @@ export async function POST(req: Request) {
       return errorResponse(existingBlocksError.message, 500);
     }
 
+    // Bestehende Buchungen werden um den Puffer verlängert,
+    // damit nach jeder Massage 15 Min frei bleiben.
     const overlapsBooking = (existingBookings ?? []).some((booking) => {
       const bookingStart = timeToMinutes(booking.booking_time);
-      const bookingEnd = bookingStart + Number(booking.duration_minutes);
-      return rangesOverlap(requestedStart, requestedEnd, bookingStart, bookingEnd);
+      const bookingEnd =
+        bookingStart + Number(booking.duration_minutes) + BUFFER_MINUTES;
+      return rangesOverlap(
+        requestedStart,
+        requestedEndWithBuffer,
+        bookingStart,
+        bookingEnd
+      );
     });
 
     if (overlapsBooking) {
@@ -158,7 +189,12 @@ export async function POST(req: Request) {
     const overlapsBlock = (existingBlocks ?? []).some((block) => {
       const blockStart = timeToMinutes(block.start_time);
       const blockEnd = timeToMinutes(block.end_time);
-      return rangesOverlap(requestedStart, requestedEnd, blockStart, blockEnd);
+      return rangesOverlap(
+        requestedStart,
+        requestedEnd,
+        blockStart,
+        blockEnd
+      );
     });
 
     if (overlapsBlock) {
@@ -189,6 +225,33 @@ export async function POST(req: Request) {
       return errorResponse(insertError.message, 500);
     }
 
+    // --- Google Kalender: Termin in Christinas Kalender anlegen ---
+    // Schlägt das fehl, bleibt die Buchung trotzdem gültig.
+    try {
+      const googleEventId = await createCalendarEvent({
+        summary: `${service} – ${name}`,
+        description:
+          `Buchung über die Webseite\n` +
+          `Kunde: ${name}\n` +
+          `E-Mail: ${email}\n` +
+          `Dauer: ${numericDuration} Min\n` +
+          `Preis: ${numericPrice} €`,
+        date,
+        time,
+        durationMinutes: numericDuration,
+      });
+
+      if (googleEventId) {
+        await supabaseAdmin
+          .from("bookings")
+          .update({ google_event_id: googleEventId })
+          .eq("id", insertedBooking.id);
+      }
+    } catch (calErr) {
+      console.error("GOOGLE KALENDER EINTRAG FEHLGESCHLAGEN:", calErr);
+    }
+
+    // --- E-Mails verschicken ---
     try {
       await sendCustomerBookingRequestEmail({
         name,

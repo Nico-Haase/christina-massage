@@ -76,28 +76,37 @@ export default function MyBookingsPage() {
 
     if (!window.confirm(confirmText)) return;
 
-    const { error } = await supabase
-      .from("bookings")
-      .update({
-        status: "cancelled",
-        cancelled_at: new Date().toISOString(),
-        cancellation_note: freeCancellation
-          ? "Kostenfrei storniert"
-          : "Spät storniert - mögliche 10 € Ausfallpauschale",
-      })
-      .eq("id", booking.id);
+    // Aktuellen Auth-Token holen, um die Route zu authentifizieren
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (error) {
-      setMessage(error.message);
+    if (!session?.access_token) {
+      setMessage("Bitte zuerst einloggen.");
       return;
     }
 
-    setMessage(
-      freeCancellation
-        ? "Termin erfolgreich storniert."
-        : "Termin storniert. Hinweis: mögliche 10 € Ausfallpauschale."
-    );
+    // Storno über die neue Server-Route (löscht auch im Google Kalender)
+    const response = await fetch("/api/bookings/cancel", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        bookingId: booking.id,
+        lateCancellation: !freeCancellation,
+      }),
+    });
 
+    const result = await response.json();
+
+    if (!result.success) {
+      setMessage(result.message || "Fehler beim Stornieren.");
+      return;
+    }
+
+    setMessage(result.message);
     loadBookings();
   };
 

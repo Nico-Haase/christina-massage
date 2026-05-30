@@ -1,3 +1,8 @@
+// =====================================================================
+// app/lib/booking-utils.ts  —  KOMPLETTE DATEI
+// Diese Datei komplett ersetzen (alles markieren, löschen, das hier rein).
+// =====================================================================
+
 export type BookingStatus =
   | "requested"
   | "pending"
@@ -38,6 +43,12 @@ export type SlotAvailability = {
   time: string;
   unavailable: boolean;
 };
+
+// --- Zentrale Konfiguration der Arbeitszeiten / Taktung ---
+export const WORK_DAY_START = "09:00"; // frühester Termin-Start
+export const WORK_DAY_LAST_START = "19:00"; // spätester Termin-Start
+export const SLOT_STEP_MINUTES = 15; // 15-Minuten-Takt
+export const BUFFER_MINUTES = 15; // Puffer NACH jeder Massage
 
 export function toMinutes(time: string): number {
   const [hours, minutes] = time.slice(0, 5).split(":").map(Number);
@@ -251,9 +262,9 @@ export function getDayStatus(
   }
 
   const slots = getSlotAvailability(dateKey, durationMinutes, bookings, blocks, {
-    dayStart: "09:00",
-    lastStart: "19:00",
-    stepMinutes: 75,
+    dayStart: WORK_DAY_START,
+    lastStart: WORK_DAY_LAST_START,
+    stepMinutes: SLOT_STEP_MINUTES,
   });
 
   if (slots.length === 0) {
@@ -282,9 +293,10 @@ export function getSlotAvailability(
     return [];
   }
 
-  const dayStart = options?.dayStart ?? "09:00";
-  const lastStart = options?.lastStart ?? "19:00";
-  const stepMinutes = options?.stepMinutes ?? 75;
+  // Standardwerte: 09:00 / 19:00 / 15 Min
+  const dayStart = options?.dayStart ?? WORK_DAY_START;
+  const lastStart = options?.lastStart ?? WORK_DAY_LAST_START;
+  const stepMinutes = options?.stepMinutes ?? SLOT_STEP_MINUTES;
 
   const now = new Date();
   const todayKey = formatDateKey(now);
@@ -317,7 +329,8 @@ export function getSlotAvailability(
     current += stepMinutes
   ) {
     const slotStart = toTimeString(current);
-    const slotEnd = toTimeString(current + durationMinutes);
+    // Der neue Termin braucht selbst auch Puffer nach hinten
+    const slotEnd = toTimeString(current + durationMinutes + BUFFER_MINUTES);
 
     let unavailable = false;
 
@@ -328,14 +341,17 @@ export function getSlotAvailability(
       }
     }
 
-    const overlapsBooking = relevantBookings.some((booking) =>
-      isTimeRangeOverlapping(
-        slotStart,
-        slotEnd,
-        booking.booking_time,
-        getBookingEndTime(booking)
-      )
-    );
+    // Bestehende Buchungen werden um den Puffer verlängert,
+    // damit nach einer Massage 15 Min frei bleiben
+    const overlapsBooking = relevantBookings.some((booking) => {
+      const bookingStart = booking.booking_time.slice(0, 5);
+      const bookingEnd = toTimeString(
+        toMinutes(booking.booking_time) +
+          Number(booking.duration_minutes) +
+          BUFFER_MINUTES
+      );
+      return isTimeRangeOverlapping(slotStart, slotEnd, bookingStart, bookingEnd);
+    });
 
     if (overlapsBooking) {
       unavailable = true;
