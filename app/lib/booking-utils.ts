@@ -1,6 +1,10 @@
 // =====================================================================
 // app/lib/booking-utils.ts  —  KOMPLETTE DATEI
-// Diese Datei komplett ersetzen (alles markieren, löschen, das hier rein).
+// Alles markieren, löschen, das hier rein.
+// =====================================================================
+// Fix: Der 15-Min-Puffer gilt nur noch gegen andere BUCHUNGEN, nicht
+// gegen BLOCKS. So gehen vor einem Block (z.B. Pilates 16-19 Uhr)
+// keine Slots mehr unnötig verloren.
 // =====================================================================
 
 export type BookingStatus =
@@ -44,11 +48,11 @@ export type SlotAvailability = {
   unavailable: boolean;
 };
 
-// --- Zentrale Konfiguration der Arbeitszeiten / Taktung ---
-export const WORK_DAY_START = "09:00"; // frühester Termin-Start
-export const WORK_DAY_LAST_START = "19:00"; // spätester Termin-Start
-export const SLOT_STEP_MINUTES = 15; // 15-Minuten-Takt
-export const BUFFER_MINUTES = 15; // Puffer NACH jeder Massage
+// --- Zentrale Konfiguration ---
+export const WORK_DAY_START = "09:00";
+export const WORK_DAY_LAST_START = "19:00";
+export const SLOT_STEP_MINUTES = 15;
+export const BUFFER_MINUTES = 15; // nur zwischen Massagen, nicht vor Blocks
 
 export function toMinutes(time: string): number {
   const [hours, minutes] = time.slice(0, 5).split(":").map(Number);
@@ -59,7 +63,6 @@ export function toTimeString(totalMinutes: number): string {
   const safeMinutes = Math.max(0, totalMinutes);
   const hours = Math.floor(safeMinutes / 60);
   const minutes = safeMinutes % 60;
-
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
@@ -87,11 +90,9 @@ export function isWeekend(date: Date): boolean {
 export function getNextWorkingDay(date: Date): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + 1);
-
   while (isWeekend(next)) {
     next.setDate(next.getDate() + 1);
   }
-
   return next;
 }
 
@@ -122,12 +123,10 @@ export function getMonthMatrix(baseDate: Date): Date[][] {
 
   while (cursor <= end) {
     const week: Date[] = [];
-
     for (let i = 0; i < 7; i++) {
       week.push(new Date(cursor));
       cursor.setDate(cursor.getDate() + 1);
     }
-
     weeks.push(week);
   }
 
@@ -159,7 +158,6 @@ export function isTimeRangeOverlapping(
   const aEnd = toMinutes(endA);
   const bStart = toMinutes(startB);
   const bEnd = toMinutes(endB);
-
   return aStart < bEnd && bStart < aEnd;
 }
 
@@ -189,7 +187,6 @@ export function isBookingOverlappingBooking(
 
 function isCancelledStatus(status?: string | null): boolean {
   const normalized = String(status ?? "").toLowerCase().trim();
-
   return (
     normalized === "cancelled" ||
     normalized === "canceled" ||
@@ -206,7 +203,6 @@ export function getDailyEvents(
     const start = booking.booking_time.slice(0, 5);
     const end = getBookingEndTime(booking).slice(0, 5);
     const cancelled = isCancelledStatus(booking.status);
-
     return {
       type: cancelled ? "cancelled" : "booking",
       start,
@@ -272,7 +268,6 @@ export function getDayStatus(
   }
 
   const hasFreeSlot = slots.some((slot) => !slot.unavailable);
-
   return hasFreeSlot ? "free" : "busy";
 }
 
@@ -293,7 +288,6 @@ export function getSlotAvailability(
     return [];
   }
 
-  // Standardwerte: 09:00 / 19:00 / 15 Min
   const dayStart = options?.dayStart ?? WORK_DAY_START;
   const lastStart = options?.lastStart ?? WORK_DAY_LAST_START;
   const stepMinutes = options?.stepMinutes ?? SLOT_STEP_MINUTES;
@@ -329,8 +323,12 @@ export function getSlotAvailability(
     current += stepMinutes
   ) {
     const slotStart = toTimeString(current);
-    // Der neue Termin braucht selbst auch Puffer nach hinten
-    const slotEnd = toTimeString(current + durationMinutes + BUFFER_MINUTES);
+    // Zwei separate Endzeitpunkte: einmal mit Puffer (für Vergleich
+    // mit anderen Buchungen) und einmal ohne (für Blocks).
+    const slotEndWithBuffer = toTimeString(
+      current + durationMinutes + BUFFER_MINUTES
+    );
+    const slotEndPure = toTimeString(current + durationMinutes);
 
     let unavailable = false;
 
@@ -341,8 +339,8 @@ export function getSlotAvailability(
       }
     }
 
-    // Bestehende Buchungen werden um den Puffer verlängert,
-    // damit nach einer Massage 15 Min frei bleiben
+    // Bestehende Buchungen werden um den Puffer verlängert, damit
+    // zwischen zwei Massagen 15 Min frei bleiben.
     const overlapsBooking = relevantBookings.some((booking) => {
       const bookingStart = booking.booking_time.slice(0, 5);
       const bookingEnd = toTimeString(
@@ -350,17 +348,23 @@ export function getSlotAvailability(
           Number(booking.duration_minutes) +
           BUFFER_MINUTES
       );
-      return isTimeRangeOverlapping(slotStart, slotEnd, bookingStart, bookingEnd);
+      return isTimeRangeOverlapping(
+        slotStart,
+        slotEndWithBuffer,
+        bookingStart,
+        bookingEnd
+      );
     });
 
     if (overlapsBooking) {
       unavailable = true;
     }
 
+    // Bei Blocks KEIN Puffer - Christina plant ihre Pausen selbst
     const overlapsBlock = relevantBlocks.some((block) =>
       isTimeRangeOverlapping(
         slotStart,
-        slotEnd,
+        slotEndPure,
         block.start_time,
         block.end_time
       )

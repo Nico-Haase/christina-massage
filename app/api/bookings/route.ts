@@ -1,11 +1,10 @@
 // =====================================================================
 // app/api/bookings/route.ts  —  KOMPLETTE DATEI
-// Diese Datei komplett ersetzen (alles markieren, löschen, das hier rein).
-//
-// Enthält:
-//   - die ursprüngliche Buchungs-Logik
-//   - 15-Min-Raster + 15-Min-Puffer (Aufgabe 1, serverseitig)
-//   - Google-Kalender-Eintrag bei neuer Buchung (Aufgabe 2)
+// Alles markieren, löschen, das hier rein.
+// =====================================================================
+// Fix: Puffer gilt nur zwischen Buchungen, nicht gegen Blocks.
+// Block-Endzeit bleibt exklusiv (Christina kann Block bis 19:15 setzen,
+// damit 19:00 mitgesperrt ist).
 // =====================================================================
 
 import { NextResponse } from "next/server";
@@ -19,10 +18,9 @@ import { createCalendarEvent } from "@/app/lib/google";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// --- Arbeitszeit-Konstanten (müssen mit booking-utils.ts übereinstimmen) ---
 const BUFFER_MINUTES = 15;
-const DAY_START_MINUTES = 9 * 60;   // 09:00 frühester Start
-const LAST_START_MINUTES = 19 * 60; // 19:00 spätester Start
+const DAY_START_MINUTES = 9 * 60;
+const LAST_START_MINUTES = 19 * 60;
 
 function errorResponse(
   message: string,
@@ -30,11 +28,7 @@ function errorResponse(
   extra?: Record<string, unknown>
 ) {
   return NextResponse.json(
-    {
-      success: false,
-      message,
-      ...extra,
-    },
+    { success: false, message, ...extra },
     { status }
   );
 }
@@ -69,10 +63,7 @@ export async function POST(req: Request) {
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
     const body = await req.json();
@@ -126,7 +117,6 @@ export async function POST(req: Request) {
     const requestedEnd = requestedStart + numericDuration;
     const requestedEndWithBuffer = requestedEnd + BUFFER_MINUTES;
 
-    // Start muss im erlaubten Fenster liegen (09:00 - 19:00)
     if (
       requestedStart < DAY_START_MINUTES ||
       requestedStart > LAST_START_MINUTES
@@ -137,7 +127,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Start muss auf einem 15-Minuten-Raster liegen
     if (requestedStart % 15 !== 0) {
       return errorResponse("Ungültige Startzeit.", 400);
     }
@@ -165,8 +154,7 @@ export async function POST(req: Request) {
       return errorResponse(existingBlocksError.message, 500);
     }
 
-    // Bestehende Buchungen werden um den Puffer verlängert,
-    // damit nach jeder Massage 15 Min frei bleiben.
+    // Buchungen: mit Puffer
     const overlapsBooking = (existingBookings ?? []).some((booking) => {
       const bookingStart = timeToMinutes(booking.booking_time);
       const bookingEnd =
@@ -180,12 +168,10 @@ export async function POST(req: Request) {
     });
 
     if (overlapsBooking) {
-      return errorResponse(
-        "Dieser Termin wurde gerade bereits vergeben.",
-        409
-      );
+      return errorResponse("Dieser Termin wurde gerade bereits vergeben.", 409);
     }
 
+    // Blocks: ohne Puffer, klassische Überlappung
     const overlapsBlock = (existingBlocks ?? []).some((block) => {
       const blockStart = timeToMinutes(block.start_time);
       const blockEnd = timeToMinutes(block.end_time);
@@ -225,8 +211,7 @@ export async function POST(req: Request) {
       return errorResponse(insertError.message, 500);
     }
 
-    // --- Google Kalender: Termin in Christinas Kalender anlegen ---
-    // Schlägt das fehl, bleibt die Buchung trotzdem gültig.
+    // Google Kalender: Termin anlegen
     try {
       const googleEventId = await createCalendarEvent({
         summary: `${service} – ${name}`,
@@ -251,7 +236,6 @@ export async function POST(req: Request) {
       console.error("GOOGLE KALENDER EINTRAG FEHLGESCHLAGEN:", calErr);
     }
 
-    // --- E-Mails verschicken ---
     try {
       await sendCustomerBookingRequestEmail({
         name,
