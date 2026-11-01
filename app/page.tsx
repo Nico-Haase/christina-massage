@@ -1836,13 +1836,21 @@ export default function ChristinaMassageWebsite() {
       <section id="special" className="py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
           {promoActive && (
-            <div className="mb-6 rounded-[1.6rem] border border-[#cfd8bf] bg-[#edf4e3] px-6 py-5 text-center shadow-sm md:px-10">
-              <p className="text-lg font-semibold leading-8 text-[#405e3f] md:text-2xl md:leading-10">
-                {language === "de"
-                  ? "Nur diese Woche von 01.11.2026 bis 07.11.2026: Beckenbodentrainer 10er Karte von 280 € auf 250 €!!"
-                  : "Csak ezen a héten, 2026.11.01. és 2026.11.07. között: Medencefenék-tréner 10 alkalmas bérlet 280 €-ról 250 €-ra!!"}
+            <div className="mb-6 rounded-[1.6rem] border-4 border-red-600 bg-white px-6 py-6 text-center shadow-md md:px-10">
+              <p className="text-xl font-extrabold leading-9 text-red-600 md:text-3xl md:leading-[3rem]">
+                {language === "de" ? (
+                  <>
+                    Nur diese Woche von 01.11.2026 bis 07.11.2026: Beckenbodentrainer 10er Karte von{" "}
+                    <span className="line-through decoration-4">280 €</span> auf 250 €!!
+                  </>
+                ) : (
+                  <>
+                    Csak ezen a héten, 2026.11.01. és 2026.11.07. között: Medencefenék-tréner 10 alkalmas bérlet{" "}
+                    <span className="line-through decoration-4">280 €</span>-ról 250 €-ra!!
+                  </>
+                )}
               </p>
-              <p className="mt-2 text-sm italic text-stone-600 md:text-base">
+              <p className="mt-2 text-sm font-semibold italic text-red-600 md:text-base">
                 {language === "de"
                   ? "*innerhalb von 6 Monaten einlösbar*"
                   : "*6 hónapon belül beváltható*"}
