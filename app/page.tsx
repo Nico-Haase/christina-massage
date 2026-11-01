@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import ReviewsList from "./components/ReviewsList";
 import ReviewForm from "./components/ReviewForm";
+import PromoPopup from "./components/PromoPopup";
+import { usePromoActive } from "./lib/promo";
 
 type Language = "de" | "hu";
 
@@ -37,6 +39,7 @@ type InfoEntry = {
 export default function ChristinaMassageWebsite() {
   const [language, setLanguage] = useState<Language>("de");
   const [showHiemtInfo, setShowHiemtInfo] = useState(false);
+  const promoActive = usePromoActive();
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const servicesSliderRef = useRef<HTMLDivElement | null>(null);
@@ -1878,9 +1881,21 @@ export default function ChristinaMassageWebsite() {
                     <div className="text-sm uppercase tracking-[0.18em] text-stone-700">
                       {c.special.packLabel}
                     </div>
-                    <div className="mt-2 text-3xl font-semibold">
-                      {c.special.packPrice}
-                    </div>
+                    {promoActive ? (
+                      <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
+                        <span className="text-lg text-stone-600 line-through">
+                          {c.special.packPrice}
+                        </span>
+                        <span className="text-3xl font-semibold">250 €</span>
+                        <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-stone-800">
+                          {language === "de" ? "Aktion bis 06.11." : "Akció nov. 6-ig"}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-3xl font-semibold">
+                        {c.special.packPrice}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2194,6 +2209,8 @@ export default function ChristinaMassageWebsite() {
           </div>
         </div>
       </footer>
+
+      <PromoPopup language={language} />
 
       {showHiemtInfo && (
         <div
