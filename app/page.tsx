@@ -1835,6 +1835,21 @@ export default function ChristinaMassageWebsite() {
 
       <section id="special" className="py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
+          {promoActive && (
+            <div className="mb-6 rounded-[1.6rem] border border-[#cfd8bf] bg-[#edf4e3] px-6 py-5 text-center shadow-sm md:px-10">
+              <p className="text-lg font-semibold leading-8 text-[#405e3f] md:text-2xl md:leading-10">
+                {language === "de"
+                  ? "Nur diese Woche von 01.11.2026 bis 07.11.2026: Beckenbodentrainer 10er Karte von 280 € auf 250 €!!"
+                  : "Csak ezen a héten, 2026.11.01. és 2026.11.07. között: Medencefenék-tréner 10 alkalmas bérlet 280 €-ról 250 €-ra!!"}
+              </p>
+              <p className="mt-2 text-sm italic text-stone-600 md:text-base">
+                {language === "de"
+                  ? "*innerhalb von 6 Monaten einlösbar*"
+                  : "*6 hónapon belül beváltható*"}
+              </p>
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-[2.2rem] border border-stone-200 bg-white shadow-[0_30px_80px_rgba(120,100,80,0.12)]">
             <div className="grid lg:grid-cols-[0.95fr_1.05fr]">
               <div className="relative min-h-[320px] bg-[#16212a] md:min-h-[360px]">
@@ -1881,21 +1896,9 @@ export default function ChristinaMassageWebsite() {
                     <div className="text-sm uppercase tracking-[0.18em] text-stone-700">
                       {c.special.packLabel}
                     </div>
-                    {promoActive ? (
-                      <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
-                        <span className="text-lg text-stone-600 line-through">
-                          {c.special.packPrice}
-                        </span>
-                        <span className="text-3xl font-semibold">250 €</span>
-                        <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-stone-800">
-                          {language === "de" ? "Aktion bis 06.11." : "Akció nov. 6-ig"}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="mt-2 text-3xl font-semibold">
-                        {c.special.packPrice}
-                      </div>
-                    )}
+                    <div className="mt-2 text-3xl font-semibold">
+                      {c.special.packPrice}
+                    </div>
                   </div>
                 </div>
 

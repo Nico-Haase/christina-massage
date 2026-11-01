@@ -1,62 +1,22 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PROMO_STORAGE_KEY, usePromoActive } from "../lib/promo";
 
 type Language = "de" | "hu";
 
-const WHATSAPP_NUMBER = "491722664648";
 const COOKIE_CONSENT_KEY = "christina-cookie-consent";
 
 const content = {
   de: {
-    eyebrow: "Aktion · 2. bis 6. November",
-    title: "HIEMT Beckenboden-Training",
-    headline: "10er-Karte jetzt günstiger sichern",
-    oldPrice: "280 €",
-    newPrice: "250 €",
-    save: "Du sparst 30 €",
-    packLabel: "10er-Karte",
-    trial: "Probesitzung: nur 30 €",
-    points: [
-      "30 Minuten pro Sitzung",
-      "Komplett in Kleidung",
-      "Nicht-invasive Behandlung",
-    ],
-    note: "Gezielte Aktivierung und Stärkung des Beckenbodens.",
-    validity: "Nur vom 2. bis 6. November 2026",
-    primary: "Jetzt per WhatsApp sichern",
-    secondary: "Mehr zu HIEMT",
-    later: "Vielleicht später",
+    headline: "%% Rabatt auf HIEMT",
+    price: "250 € statt 280 €",
     close: "Schließen",
-    imageAlt: "HIEMT Beckenboden-Training in Kleidung auf dem Behandlungsstuhl",
-    whatsappText:
-      "Hallo Christina, ich möchte gerne die HIEMT 10er-Karte zum Aktionspreis von 250 € sichern.",
   },
   hu: {
-    eyebrow: "Akció · november 2–6.",
-    title: "HIEMT medencefenék-tréning",
-    headline: "Biztosítsd most kedvezményesen a 10 alkalmas bérletet",
-    oldPrice: "280 €",
-    newPrice: "250 €",
-    save: "30 € megtakarítás",
-    packLabel: "10 alkalmas bérlet",
-    trial: "Próbaalkalom: csak 30 €",
-    points: [
-      "30 perc egy alkalom",
-      "Teljesen ruhában",
-      "Nem invazív kezelés",
-    ],
-    note: "A medencefenék célzott aktiválása és erősítése.",
-    validity: "Csak 2026. november 2. és 6. között",
-    primary: "Foglalás WhatsAppon",
-    secondary: "Továbbiak a HIEMT-ről",
-    later: "Talán később",
+    headline: "%% Kedvezmény a HIEMT-re",
+    price: "250 € 280 € helyett",
     close: "Bezárás",
-    imageAlt: "HIEMT medencefenék-tréning ruhában, kezelőszéken ülve",
-    whatsappText:
-      "Szia Christina, szeretném lefoglalni a HIEMT 10 alkalmas bérletet 250 €-s akciós áron.",
   },
 } as const;
 
@@ -112,12 +72,12 @@ export default function PromoPopup({ language }: { language: Language }) {
     const openTimer = window.setTimeout(() => {
       setOpen(true);
       window.requestAnimationFrame(() => setShown(true));
-    }, 1200);
+    }, 1000);
 
     return () => window.clearTimeout(openTimer);
   }, [active, consented]);
 
-  // Sichtbar nur, solange die Aktion laeuft (endet sie bei offenem Popup, verschwindet es von selbst)
+  // Sichtbar nur, solange die Aktion laeuft
   const visible = active && open;
 
   // Escape, Fokus und Scroll-Sperre
@@ -144,10 +104,6 @@ export default function PromoPopup({ language }: { language: Language }) {
 
   if (!visible) return null;
 
-  const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    t.whatsappText
-  )}`;
-
   return (
     <div
       className={`fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-4 transition-opacity duration-300 ${
@@ -160,7 +116,7 @@ export default function PromoPopup({ language }: { language: Language }) {
         aria-modal="true"
         aria-labelledby="promo-title"
         onClick={(e) => e.stopPropagation()}
-        className={`relative grid max-h-full w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-[#f8f5ef] shadow-2xl transition duration-300 sm:grid-cols-[0.8fr_1.2fr] ${
+        className={`relative w-full max-w-md rounded-[2rem] bg-[#f8f5ef] px-8 py-12 text-center shadow-2xl transition duration-300 ${
           shown ? "translate-y-0 scale-100" : "translate-y-3 scale-95"
         }`}
       >
@@ -169,93 +125,20 @@ export default function PromoPopup({ language }: { language: Language }) {
           type="button"
           onClick={dismiss}
           aria-label={t.close}
-          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl leading-none text-stone-700 shadow-sm transition hover:bg-white"
+          className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl leading-none text-stone-700 shadow-sm transition hover:bg-stone-50"
         >
           ×
         </button>
 
-        <div className="relative hidden min-h-[320px] bg-[#16212a] sm:block">
-          <Image
-            src="/hiemt-aktion.jpg"
-            alt={t.imageAlt}
-            fill
-            sizes="(min-width: 640px) 300px, 0px"
-            className="object-cover"
-          />
-        </div>
-
-        <div className="p-6 pt-14 sm:p-8 sm:pt-12">
-          <div className="inline-flex rounded-full bg-[#dfe6da] px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-stone-700">
-            {t.eyebrow}
-          </div>
-
-          <p className="mt-4 text-sm uppercase tracking-[0.18em] text-[#7a8566]">
-            {t.title}
-          </p>
-          <h2
-            id="promo-title"
-            className="mt-2 text-2xl font-semibold leading-tight text-stone-900 md:text-3xl"
-          >
-            {t.headline}
-          </h2>
-
-          <div className="mt-5 rounded-[1.6rem] bg-[#567a57] p-5 text-white">
-            <div className="text-xs uppercase tracking-[0.18em] text-white/70">
-              {t.packLabel}
-            </div>
-            <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-lg text-white/60 line-through">
-                {t.oldPrice}
-              </span>
-              <span className="text-4xl font-semibold">{t.newPrice}</span>
-              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
-                {t.save}
-              </span>
-            </div>
-            <div className="mt-3 text-sm text-white/85">{t.trial}</div>
-          </div>
-
-          <ul className="mt-5 space-y-2 text-sm text-stone-700">
-            {t.points.map((point) => (
-              <li key={point} className="flex gap-3">
-                <span className="mt-[9px] h-2 w-2 shrink-0 rounded-full bg-[#6f7d58]" />
-                <span>{point}</span>
-              </li>
-            ))}
-          </ul>
-
-          <p className="mt-4 text-sm leading-6 text-stone-600">{t.note}</p>
-          <p className="mt-2 text-xs font-medium text-[#4e5f3f]">
-            {t.validity}
-          </p>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={dismiss}
-              className="inline-block rounded-full bg-[#405e3f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#344f33]"
-            >
-              {t.primary}
-            </a>
-            <a
-              href="#special"
-              onClick={dismiss}
-              className="inline-block rounded-full border border-[#6f7d58] px-6 py-3 text-sm font-semibold text-[#556246] transition hover:bg-[#eef3e6]"
-            >
-              {t.secondary}
-            </a>
-          </div>
-
-          <button
-            type="button"
-            onClick={dismiss}
-            className="mt-4 text-sm text-stone-500 underline-offset-4 transition hover:text-stone-800 hover:underline"
-          >
-            {t.later}
-          </button>
-        </div>
+        <h2
+          id="promo-title"
+          className="text-4xl font-semibold leading-tight text-stone-900 md:text-5xl"
+        >
+          {t.headline}
+        </h2>
+        <p className="mt-5 text-2xl font-semibold text-[#405e3f] md:text-3xl">
+          {t.price}
+        </p>
       </div>
     </div>
   );

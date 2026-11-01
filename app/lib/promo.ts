@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-// HIEMT-Aktion: Montag 02.11.2026 00:00 Uhr bis Freitag 06.11.2026 23:59:59 Uhr (deutsche Zeit, MEZ)
-export const PROMO_START = new Date("2026-11-02T00:00:00+01:00").getTime();
-export const PROMO_END = new Date("2026-11-06T23:59:59+01:00").getTime();
+// HIEMT-Aktion: Sonntag 01.11.2026 00:00 Uhr bis Samstag 07.11.2026 23:59:59 Uhr (deutsche Zeit, MEZ)
+export const PROMO_START = new Date("2026-11-01T00:00:00+01:00").getTime();
+export const PROMO_END = new Date("2026-11-07T23:59:59+01:00").getTime();
 
 export const PROMO_STORAGE_KEY = "christina-hiemt-promo-2026-11";
 
