@@ -1,41 +1,50 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PROMO_STORAGE_KEY, usePromoActive } from "../lib/promo";
+import {
+  PROMO_STORAGE_KEY,
+  promoWhatsappHref,
+  usePromoActive,
+} from "../lib/promo";
 
 type Language = "de" | "hu";
 
 const COOKIE_CONSENT_KEY = "christina-cookie-consent";
-const WHATSAPP_NUMBER = "491722664648";
 
 const content = {
   de: {
-    eyebrow: "HIEMT Beckenboden-Training",
-    headline: "RABATT",
-    save: "Spare jetzt 30 €",
-    period: "Nur diese Woche von 01.11.2026 bis 07.11.2026",
-    instead: "Anstatt",
+    eyebrow: "Massage-Paket",
+    headline: "RABATTAKTION",
+    pack: "3x 60 Minuten Massage",
+    gift: "30 Minuten geschenkt",
+    instead: "Statt",
     only: "nur",
-    pack: "10er-Karte",
-    valid: "innerhalb von 6 Monaten einlösbar",
-    button: "Jetzt beraten",
+    period: "Nur diese Woche von 08.11.2026 bis 14.11.2026",
+    stepsTitle: "So geht's",
+    steps: [
+      "Eine 60-Minuten-Massage ganz normal online buchen.",
+      "Per WhatsApp schreiben, dass du die Aktion nutzen möchtest.",
+      "Christina fügt die weiteren 2x 60 Minuten für dich hinzu.",
+    ],
+    button: "Per WhatsApp sichern",
     close: "Schließen",
-    whatsappText:
-      "Hallo Christina, ich interessiere mich für die HIEMT 10er-Karte zum Aktionspreis von 250 €.",
   },
   hu: {
-    eyebrow: "HIEMT medencefenék-tréning",
-    headline: "KEDVEZMÉNY",
-    save: "Spórolj most 30 €-t",
-    period: "Csak ezen a héten: 2026.11.01. és 2026.11.07. között",
-    instead: "280 € helyett",
+    eyebrow: "Masszázs csomag",
+    headline: "AKCIÓ",
+    pack: "3x 60 perc masszázs",
+    gift: "30 perc ajándék",
+    instead: "180\u00a0€ helyett",
     only: "csak",
-    pack: "10 alkalmas bérlet",
-    valid: "6 hónapon belül beváltható",
-    button: "Tanácsadás kérése",
+    period: "Csak ezen a héten: 2026.11.08. és 2026.11.14. között",
+    stepsTitle: "Így működik",
+    steps: [
+      "Foglalj egy 60 perces masszázst a szokásos módon online.",
+      "Írj WhatsAppon, hogy szeretnéd igénybe venni az akciót.",
+      "Christina hozzáadja neked a további 2x 60 percet.",
+    ],
+    button: "Foglalás WhatsAppon",
     close: "Bezárás",
-    whatsappText:
-      "Szia Christina, érdeklődni szeretnék a HIEMT 10 alkalmas bérletről (250 €).",
   },
 } as const;
 
@@ -123,9 +132,7 @@ export default function PromoPopup({ language }: { language: Language }) {
 
   if (!visible) return null;
 
-  const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    t.whatsappText
-  )}`;
+  const whatsappHref = promoWhatsappHref(language);
 
   return (
     <div
@@ -139,7 +146,7 @@ export default function PromoPopup({ language }: { language: Language }) {
         aria-modal="true"
         aria-labelledby="promo-title"
         onClick={(e) => e.stopPropagation()}
-        className={`relative my-auto w-full max-w-2xl rounded-[2rem] border-4 border-red-600 bg-white px-6 py-10 text-center shadow-2xl transition duration-300 md:px-12 md:py-14 ${
+        className={`relative my-auto w-full max-w-2xl rounded-[2rem] border-4 border-red-600 bg-white px-5 py-8 text-center shadow-2xl transition duration-300 sm:px-8 md:px-12 md:py-8 ${
           shown ? "translate-y-0 scale-100" : "translate-y-3 scale-95"
         }`}
       >
@@ -159,29 +166,27 @@ export default function PromoPopup({ language }: { language: Language }) {
 
         <h2
           id="promo-title"
-          className="mt-3 text-6xl font-black uppercase leading-none tracking-tight text-red-600 sm:text-7xl md:text-8xl"
+          className="mt-2 text-[2rem] font-black uppercase leading-none tracking-tight text-red-600 min-[400px]:text-5xl sm:text-6xl md:text-7xl"
         >
           {t.headline}
         </h2>
 
-        <p className="mt-6 text-3xl font-extrabold leading-tight text-red-600 md:text-5xl">
-          {t.save}
+        <p className="mt-4 text-2xl font-extrabold leading-tight text-stone-900 md:text-4xl">
+          {t.pack}
+        </p>
+        <p className="mt-1 text-xl font-extrabold leading-tight text-red-600 md:text-3xl">
+          {t.gift}
         </p>
 
-        <p className="mt-4 text-lg font-bold leading-snug text-stone-900 md:text-2xl">
-          {t.period}
-        </p>
-
-        <div className="mt-6 rounded-[1.6rem] bg-red-600 px-4 py-6 text-white md:px-8 md:py-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/85">
-            {t.pack}
-          </p>
-          <p className="mt-2 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-            <span className="text-lg font-semibold text-white/80 md:text-2xl">
-              {language === "de" ? t.instead : null}
-            </span>
+        <div className="mt-4 rounded-[1.6rem] bg-red-600 px-4 py-4 text-white md:px-8 md:py-5">
+          <p className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
+            {language === "de" ? (
+              <span className="text-lg font-semibold text-white/80 md:text-2xl">
+                {t.instead}
+              </span>
+            ) : null}
             <span className="text-3xl font-bold text-white/80 line-through decoration-4 md:text-5xl">
-              280{" "}€
+              180{"\u00a0"}€
             </span>
             {language === "hu" ? (
               <span className="text-lg font-semibold text-white/80 md:text-2xl">
@@ -193,22 +198,38 @@ export default function PromoPopup({ language }: { language: Language }) {
             <span className="text-xl font-bold uppercase md:text-3xl">
               {t.only}
             </span>
-            <span className="text-6xl font-black leading-none md:text-8xl">
-              250{" "}€
+            <span className="text-6xl font-black leading-none md:text-7xl">
+              150{"\u00a0"}€
             </span>
           </p>
         </div>
 
-        <p className="mt-4 text-sm font-medium italic text-stone-600 md:text-base">
-          *{t.valid}*
+        <p className="mt-4 text-base font-bold leading-snug text-stone-900 md:text-lg">
+          {t.period}
         </p>
+
+        <div className="mt-4 rounded-[1.4rem] bg-[#f6efe5] px-5 py-4 text-left">
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-red-600">
+            {t.stepsTitle}
+          </p>
+          <ol className="mt-3 space-y-2 text-sm text-stone-800 md:text-base">
+            {t.steps.map((step, i) => (
+              <li key={step} className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+                  {i + 1}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
 
         <a
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
           onClick={dismiss}
-          className="mt-6 inline-block w-full rounded-full bg-[#405e3f] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-[#344f33] md:w-auto md:px-12 md:py-5 md:text-xl"
+          className="mt-5 inline-block w-full rounded-full bg-[#405e3f] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-[#344f33] md:w-auto md:px-12"
         >
           {t.button}
         </a>

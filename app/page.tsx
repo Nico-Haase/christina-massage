@@ -6,7 +6,7 @@ import { supabase } from "./lib/supabase";
 import ReviewsList from "./components/ReviewsList";
 import ReviewForm from "./components/ReviewForm";
 import PromoPopup from "./components/PromoPopup";
-import { usePromoActive } from "./lib/promo";
+import { promoWhatsappHref, usePromoActive } from "./lib/promo";
 
 type Language = "de" | "hu";
 
@@ -1835,29 +1835,6 @@ export default function ChristinaMassageWebsite() {
 
       <section id="special" className="py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          {promoActive && (
-            <div className="mb-6 rounded-[1.6rem] border-4 border-red-600 bg-white px-6 py-6 text-center shadow-md md:px-10">
-              <p className="text-xl font-extrabold leading-9 text-red-600 md:text-3xl md:leading-[3rem]">
-                {language === "de" ? (
-                  <>
-                    Nur diese Woche von 01.11.2026 bis 07.11.2026: Beckenbodentrainer 10er Karte von{" "}
-                    <span className="line-through decoration-4">280 €</span> auf 250 €!!
-                  </>
-                ) : (
-                  <>
-                    Csak ezen a héten, 2026.11.01. és 2026.11.07. között: Medencefenék-tréner 10 alkalmas bérlet{" "}
-                    <span className="line-through decoration-4">280 €</span>-ról 250 €-ra!!
-                  </>
-                )}
-              </p>
-              <p className="mt-2 text-sm font-semibold italic text-red-600 md:text-base">
-                {language === "de"
-                  ? "*innerhalb von 6 Monaten einlösbar*"
-                  : "*6 hónapon belül beváltható*"}
-              </p>
-            </div>
-          )}
-
           <div className="overflow-hidden rounded-[2.2rem] border border-stone-200 bg-white shadow-[0_30px_80px_rgba(120,100,80,0.12)]">
             <div className="grid lg:grid-cols-[0.95fr_1.05fr]">
               <div className="relative min-h-[320px] bg-[#16212a] md:min-h-[360px]">
@@ -1957,6 +1934,37 @@ export default function ChristinaMassageWebsite() {
 
       <section id="leistungen" className="pt-16 pb-4 md:pt-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
+          {promoActive && (
+            <div className="mb-10 rounded-[1.6rem] border-4 border-red-600 bg-white px-6 py-6 text-center shadow-md md:px-10">
+              <p className="text-xl font-extrabold leading-9 text-red-600 md:text-3xl md:leading-[3rem]">
+                {language === "de" ? (
+                  <>
+                    Rabattaktion vom 08.11.2026 bis 14.11.2026: 3x 60 Minuten Massage statt{" "}
+                    <span className="line-through decoration-4">180 €</span> nur 150 €, also 30 Minuten geschenkt!
+                  </>
+                ) : (
+                  <>
+                    Akció 2026.11.08. és 2026.11.14. között: 3x 60 perc masszázs{" "}
+                    <span className="line-through decoration-4">180 €</span> helyett csak 150 €, azaz 30 perc ajándék!
+                  </>
+                )}
+              </p>
+              <p className="mt-3 text-sm font-semibold text-stone-800 md:text-base">
+                {language === "de"
+                  ? "So geht's: Eine 60-Minuten-Massage ganz normal buchen und Christina per WhatsApp schreiben, dass du die Aktion nutzen möchtest. Sie fügt die weiteren 2x 60 Minuten für dich hinzu."
+                  : "Így működik: Foglalj egy 60 perces masszázst a szokásos módon, majd írj Christinának WhatsAppon, hogy szeretnéd igénybe venni az akciót. Ő hozzáadja a további 2x 60 percet."}
+              </p>
+              <a
+                href={promoWhatsappHref(language)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-block rounded-full bg-[#405e3f] px-8 py-4 text-base font-bold text-white shadow-md transition hover:bg-[#344f33]"
+              >
+                {language === "de" ? "Aktion per WhatsApp sichern" : "Akció foglalása WhatsAppon"}
+              </a>
+            </div>
+          )}
+
           <div className="mb-10 text-center">
             <p className="text-sm uppercase tracking-[0.28em] text-stone-500">
               {c.services.eyebrow}
